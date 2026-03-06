@@ -13,9 +13,11 @@ import {
   EyeOff
 } from "lucide-react";
 
-import AnimatedKPI from "../../components/cards/AnimatedKPI";
-import MetricCard from "../../components/cards/MetricCard";
-import SectionCard from "../../components/cards/SectionCard";
+import AnimatedKPI from "../components/AnimatedKPI";
+import MetricCard from "../components/MetricCard";
+import SectionCard from "../components/Section";
+
+import { wcUploadDual } from "../services/api";
 
 import {
   BarChart,
@@ -27,7 +29,6 @@ import {
   Cell
 } from "recharts";
 
-const API = "https://credit-backend-production-d988.up.railway.app";
 const STORAGE_KEY = "credit_app_v1";
 
 export default function WorkingCapital() {
@@ -61,39 +62,32 @@ export default function WorkingCapital() {
       maximumFractionDigits: 0
     }).format(val || 0);
 
+  /* SAVE GLOBAL STORAGE */
+
   useEffect(() => {
     const existing = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
     localStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({ ...existing, workingCapital: { form, result } })
+      JSON.stringify({
+        ...existing,
+        workingCapital: { form, result }
+      })
     );
   }, [form, result]);
 
-  // =============================
-  // FILE EXTRACTION
-  // =============================
+
+  /* FILE EXTRACTION */
 
   const extractFiles = async () => {
 
     if (!balanceSheet || !profitLoss)
       return alert("Upload both files");
 
-    const fd = new FormData();
-    fd.append("balance_sheet", balanceSheet);
-    fd.append("profit_loss", profitLoss);
-
     try {
 
       setLoading(true);
 
-      const res = await fetch(`${API}/wc/upload-dual`, {
-        method: "POST",
-        body: fd
-      });
-
-      const data = await res.json();
-
-      setLoading(false);
+      const data = await wcUploadDual(balanceSheet, profitLoss);
 
       if (data) {
         setForm(data.extracted_values || data);
@@ -102,14 +96,19 @@ export default function WorkingCapital() {
       }
 
     } catch {
-      setLoading(false);
+
       alert("Server Error");
+
+    } finally {
+
+      setLoading(false);
+
     }
+
   };
 
-  // =============================
-  // CALCULATE
-  // =============================
+
+  /* MANUAL CALCULATION */
 
   const calculate = () => {
 
@@ -141,6 +140,7 @@ export default function WorkingCapital() {
     });
 
     setShowResults(true);
+
   };
 
   return (
@@ -153,7 +153,7 @@ export default function WorkingCapital() {
 
         <div className="flex items-center gap-4">
 
-          <BarChart3 className="text-blue-500 w-8 h-8" />
+          <BarChart3 className="text-blue-500 w-8 h-8"/>
 
           <div>
             <h2 className="text-3xl font-extrabold text-white">
@@ -172,13 +172,14 @@ export default function WorkingCapital() {
             onClick={() => setShowResults(!showResults)}
             className="flex items-center gap-2 bg-slate-800 px-4 py-2 rounded-xl"
           >
-            {showResults ? <EyeOff size={18} /> : <Eye size={18} />}
+            {showResults ? <EyeOff size={18}/> : <Eye size={18}/>}
             {showResults ? "Hide Analysis" : "Show Analysis"}
           </button>
 
         )}
 
       </div>
+
 
       <div className="max-w-7xl mx-auto space-y-8">
 
@@ -188,14 +189,14 @@ export default function WorkingCapital() {
 
           <UploadCard
             label="Balance Sheet"
-            icon={<FileText size={20} />}
-            onChange={(e) => setBalanceSheet(e.target.files[0])}
+            icon={<FileText size={20}/>}
+            onChange={(e)=>setBalanceSheet(e.target.files[0])}
           />
 
           <UploadCard
             label="Profit & Loss"
-            icon={<TrendingUp size={20} />}
-            onChange={(e) => setProfitLoss(e.target.files[0])}
+            icon={<TrendingUp size={20}/>}
+            onChange={(e)=>setProfitLoss(e.target.files[0])}
           />
 
           <button
@@ -203,11 +204,12 @@ export default function WorkingCapital() {
             disabled={loading}
             className="bg-blue-600 hover:bg-blue-500 text-white py-4 rounded-2xl flex items-center justify-center gap-2"
           >
-            <UploadCloud size={20} />
+            <UploadCloud size={20}/>
             {loading ? "Processing..." : "Extract Data"}
           </button>
 
         </div>
+
 
         {/* INPUTS */}
 
@@ -241,6 +243,7 @@ export default function WorkingCapital() {
           </div>
 
         </div>
+
 
         {/* RESULTS */}
 
@@ -277,30 +280,6 @@ export default function WorkingCapital() {
 
                   </div>
 
-                  <div className="mt-10">
-
-                    <div className="text-sm text-slate-400 mb-2">
-                      Liquidity Health Index
-                    </div>
-
-                    <div className="w-full bg-slate-800 rounded-full h-3">
-
-                      <div
-                        className="h-3 rounded-full"
-                        style={{
-                          width:`${result.liquidity_score}%`,
-                          background:"linear-gradient(90deg,#ef4444,#f59e0b,#22c55e)"
-                        }}
-                      />
-
-                    </div>
-
-                    <div className="text-right text-sm mt-1">
-                      {result.liquidity_score}%
-                    </div>
-
-                  </div>
-
                 </SectionCard>
 
               </div>
@@ -330,11 +309,9 @@ export default function WorkingCapital() {
                     <Tooltip/>
 
                     <Bar dataKey="value" radius={[6,6,0,0]}>
-
                       <Cell fill="#3b82f6"/>
                       <Cell fill="#ef4444"/>
                       <Cell fill="#10b981"/>
-
                     </Bar>
 
                   </BarChart>
@@ -354,62 +331,5 @@ export default function WorkingCapital() {
     </div>
 
   );
-}
 
-
-
-function InputField({label,value,onChange}){
-
-  return(
-
-    <div>
-
-      <label className="text-xs text-slate-500 uppercase">
-        {label}
-      </label>
-
-      <div className="relative mt-1">
-
-        <span className="absolute left-3 top-3 text-blue-400">
-          ₹
-        </span>
-
-        <input
-          type="number"
-          value={value||""}
-          onChange={(e)=>onChange(e.target.value)}
-          className="w-full bg-[#070b14] text-white pl-8 pr-3 py-3 rounded-xl border border-slate-800"
-        />
-
-      </div>
-
-    </div>
-
-  )
-
-}
-
-
-
-function UploadCard({label,icon,onChange}){
-
-  return(
-
-    <div className="bg-[#0f172a] p-6 rounded-2xl border border-slate-800">
-
-      <div className="flex items-center gap-2 mb-3 text-slate-400">
-        {icon}
-        <span className="text-sm font-semibold">{label}</span>
-      </div>
-
-      <input
-        type="file"
-        onChange={onChange}
-        className="w-full text-xs text-slate-400"
-      />
-
-    </div>
-
-  )
-
-                  }
+              }
