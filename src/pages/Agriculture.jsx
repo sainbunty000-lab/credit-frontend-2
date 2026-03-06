@@ -9,7 +9,7 @@ import {
   ShieldAlert
 } from "lucide-react";
 
-import { agriCalculate } from "../../services/api";
+import { agriCalculate } from "../services/api";
 
 import {
   PieChart,
@@ -40,9 +40,7 @@ export default function Agriculture() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  /* =========================
-     LOAD FROM GLOBAL STORAGE
-  ========================== */
+  /* LOAD FROM STORAGE */
 
   useEffect(() => {
 
@@ -56,9 +54,7 @@ export default function Agriculture() {
 
   }, []);
 
-  /* =========================
-     SAVE TO GLOBAL STORAGE
-  ========================== */
+  /* SAVE TO STORAGE */
 
   useEffect(() => {
 
@@ -160,7 +156,7 @@ export default function Agriculture() {
 
       </div>
 
-      {/* INPUT SECTION */}
+      {/* INPUT */}
 
       <div className="bg-slate-900 p-8 rounded-2xl border border-slate-800">
 
@@ -222,7 +218,7 @@ export default function Agriculture() {
 
         <div className="space-y-10">
 
-          {/* KPI CARDS */}
+          {/* KPI */}
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
 
@@ -235,7 +231,7 @@ export default function Agriculture() {
 
           </div>
 
-          {/* FOIR BAR */}
+          {/* FOIR */}
 
           <div className="bg-slate-900 p-8 rounded-2xl border border-slate-800">
 
@@ -262,103 +258,15 @@ export default function Agriculture() {
 
           </div>
 
-          {/* CHART GRID */}
+          {/* CHARTS */}
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-            {/* INCOME SPLIT */}
+            <ChartIncomeSplit result={result} />
 
-            <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800">
+            <ChartLoanModels result={result} />
 
-              <h4 className="text-xs uppercase text-slate-400 mb-4">
-                Income Split
-              </h4>
-
-              <ResponsiveContainer width="100%" height={250}>
-
-                <PieChart>
-
-                  <Pie
-                    data={[
-                      { name:"Documented", value: result.chart_data?.income_split?.documented || 0 },
-                      { name:"Undocumented", value: result.chart_data?.income_split?.undocumented || 0 }
-                    ]}
-                    innerRadius={60}
-                    outerRadius={90}
-                    dataKey="value"
-                  >
-                    <Cell fill="#10b981"/>
-                    <Cell fill="#3b82f6"/>
-                  </Pie>
-
-                  <Tooltip/>
-
-                </PieChart>
-
-              </ResponsiveContainer>
-
-            </div>
-
-            {/* LOAN MODEL COMPARISON */}
-
-            <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800">
-
-              <h4 className="text-xs uppercase text-slate-400 mb-4">
-                Loan Eligibility Models
-              </h4>
-
-              <ResponsiveContainer width="100%" height={250}>
-
-                <BarChart
-                  data={[
-                    { name:"EMI Model", value: result.eligible_loan_emi_model },
-                    { name:"Policy Model", value: result.eligible_loan_policy_model }
-                  ]}
-                >
-
-                  <CartesianGrid strokeDasharray="3 3"/>
-                  <XAxis dataKey="name"/>
-                  <YAxis/>
-                  <Tooltip/>
-                  <Legend/>
-
-                  <Bar dataKey="value" fill="#10b981"/>
-
-                </BarChart>
-
-              </ResponsiveContainer>
-
-            </div>
-
-            {/* EMI STRESS */}
-
-            <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800">
-
-              <h4 className="text-xs uppercase text-slate-400 mb-4">
-                Income vs EMI Stress
-              </h4>
-
-              <ResponsiveContainer width="100%" height={250}>
-
-                <BarChart
-                  data={[
-                    { name:"Disposable", value: result.disposable_income },
-                    { name:"Current EMI", value: form.emi_monthly }
-                  ]}
-                >
-
-                  <CartesianGrid strokeDasharray="3 3"/>
-                  <XAxis dataKey="name"/>
-                  <YAxis/>
-                  <Tooltip/>
-
-                  <Bar dataKey="value" fill="#3b82f6"/>
-
-                </BarChart>
-
-              </ResponsiveContainer>
-
-            </div>
+            <ChartStress result={result} form={form} />
 
           </div>
 
@@ -370,7 +278,7 @@ export default function Agriculture() {
   );
 }
 
-/* INPUT FIELD */
+/* INPUT */
 
 function AgriInput({ label, name, value, onChange, icon }) {
 
@@ -404,7 +312,7 @@ function AgriInput({ label, name, value, onChange, icon }) {
 
 }
 
-/* KPI CARD */
+/* KPI */
 
 function MetricCard({ title, value, highlight, grade }) {
 
@@ -429,6 +337,116 @@ function MetricCard({ title, value, highlight, grade }) {
 
     </div>
 
+  );
+
+}
+
+/* CHART COMPONENTS */
+
+function ChartIncomeSplit({ result }) {
+
+  return (
+    <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800">
+
+      <h4 className="text-xs uppercase text-slate-400 mb-4">
+        Income Split
+      </h4>
+
+      <ResponsiveContainer width="100%" height={250}>
+
+        <PieChart>
+
+          <Pie
+            data={[
+              { name:"Documented", value: result.chart_data?.income_split?.documented || 0 },
+              { name:"Undocumented", value: result.chart_data?.income_split?.undocumented || 0 }
+            ]}
+            innerRadius={60}
+            outerRadius={90}
+            dataKey="value"
+          >
+
+            <Cell fill="#10b981"/>
+            <Cell fill="#3b82f6"/>
+
+          </Pie>
+
+          <Tooltip/>
+
+        </PieChart>
+
+      </ResponsiveContainer>
+
+    </div>
+  );
+
+}
+
+function ChartLoanModels({ result }) {
+
+  return (
+    <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800">
+
+      <h4 className="text-xs uppercase text-slate-400 mb-4">
+        Loan Eligibility Models
+      </h4>
+
+      <ResponsiveContainer width="100%" height={250}>
+
+        <BarChart
+          data={[
+            { name:"EMI Model", value: result.eligible_loan_emi_model },
+            { name:"Policy Model", value: result.eligible_loan_policy_model }
+          ]}
+        >
+
+          <CartesianGrid strokeDasharray="3 3"/>
+          <XAxis dataKey="name"/>
+          <YAxis/>
+          <Tooltip/>
+          <Legend/>
+
+          <Bar dataKey="value" fill="#10b981"/>
+
+        </BarChart>
+
+      </ResponsiveContainer>
+
+    </div>
+  );
+
+}
+
+function ChartStress({ result, form }) {
+
+  return (
+    <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800">
+
+      <h4 className="text-xs uppercase text-slate-400 mb-4">
+        Income vs EMI Stress
+      </h4>
+
+      <ResponsiveContainer width="100%" height={250}>
+
+        <BarChart
+          data={[
+            { name:"Disposable", value: result.disposable_income },
+            { name:"Current EMI", value: form.emi_monthly }
+          ]}
+        >
+
+          <CartesianGrid strokeDasharray="3 3"/>
+          <XAxis dataKey="name"/>
+          <YAxis/>
+          <Tooltip/>
+
+          <Bar dataKey="value" fill="#3b82f6"/>
+
+        </BarChart>
+
+      </ResponsiveContainer>
+
+    </div>
   );
 
 }
