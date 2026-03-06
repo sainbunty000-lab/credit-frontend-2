@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { Upload, BarChart3, ShieldCheck } from "lucide-react";
 
+import { bankingAnalyze } from "../services/api";
+
 import {
   BarChart,
   Bar,
@@ -15,7 +17,6 @@ import {
   Cell
 } from "recharts";
 
-const API = "https://credit-backend-production-d988.up.railway.app";
 const STORAGE_KEY = "credit_app_v1";
 
 export default function Banking() {
@@ -24,9 +25,7 @@ export default function Banking() {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  /* =========================
-     LOAD SAVED DATA
-  ========================== */
+  /* LOAD FROM STORAGE */
 
   useEffect(() => {
 
@@ -34,16 +33,12 @@ export default function Banking() {
       JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
 
     if (stored.banking) {
-
       setResult(stored.banking.result || null);
-
     }
 
   }, []);
 
-  /* =========================
-     SAVE TO GLOBAL STORAGE
-  ========================== */
+  /* SAVE TO STORAGE */
 
   useEffect(() => {
 
@@ -54,43 +49,36 @@ export default function Banking() {
       STORAGE_KEY,
       JSON.stringify({
         ...existing,
-        banking: {
-          result
-        }
+        banking: { result }
       })
     );
 
   }, [result]);
 
+  /* ANALYZE BANK STATEMENT */
 
   const handleAnalyze = async () => {
 
     if (!file) return alert("Upload bank statement");
 
-    const fd = new FormData();
-    fd.append("file", file);
-
     try {
 
       setLoading(true);
 
-      const res = await fetch(`${API}/banking/full-analysis`, {
-        method: "POST",
-        body: fd
-      });
+      const data = await bankingAnalyze(file);
 
-      const data = await res.json();
-
-      setResult(data.analysis);
-
-      setLoading(false);
+      setResult(data?.analysis || null);
 
     } catch {
 
-      setLoading(false);
       alert("Analysis failed");
 
+    } finally {
+
+      setLoading(false);
+
     }
+
   };
 
   const COLORS = ["#3b82f6", "#ef4444", "#10b981"];
@@ -149,22 +137,22 @@ export default function Banking() {
 
             <Metric
               title="Total Credit"
-              value={result.statement_summary.total_credit}
+              value={result.statement_summary?.total_credit}
             />
 
             <Metric
               title="Total Debit"
-              value={result.statement_summary.total_debit}
+              value={result.statement_summary?.total_debit}
             />
 
             <Metric
               title="Net Surplus"
-              value={result.statement_summary.net_surplus}
+              value={result.statement_summary?.net_surplus}
             />
 
             <Metric
               title="Salary Income"
-              value={result.income_analysis.salary_income}
+              value={result.income_analysis?.salary_income}
             />
 
           </div>
@@ -182,7 +170,7 @@ export default function Banking() {
               </h3>
 
               <span className="text-2xl font-bold text-emerald-400">
-                {result.risk_summary.hygiene_score}
+                {result.risk_summary?.hygiene_score || 0}
               </span>
 
             </div>
@@ -192,7 +180,7 @@ export default function Banking() {
               <div
                 className="h-4 rounded-full"
                 style={{
-                  width:`${result.risk_summary.hygiene_score}%`,
+                  width:`${result.risk_summary?.hygiene_score || 0}%`,
                   background:"linear-gradient(90deg,#ef4444,#f59e0b,#22c55e)"
                 }}
               />
@@ -201,8 +189,8 @@ export default function Banking() {
 
             <div className="mt-2 text-sm text-slate-400">
 
-              Risk Grade: {result.risk_summary.risk_grade} |
-              Status: {result.risk_summary.status}
+              Risk Grade: {result.risk_summary?.risk_grade || "-"} |
+              Status: {result.risk_summary?.status || "-"}
 
             </div>
 
@@ -224,7 +212,7 @@ export default function Banking() {
 
               <ResponsiveContainer width="100%" height={300}>
 
-                <BarChart data={result.chart_data.monthly_trend}>
+                <BarChart data={result.chart_data?.monthly_trend || []}>
 
                   <CartesianGrid strokeDasharray="3 3"/>
 
@@ -263,11 +251,11 @@ export default function Banking() {
                     data={[
                       {
                         name:"UPI Spends",
-                        value:result.expense_analysis.upi_spends
+                        value:result.expense_analysis?.upi_spends || 0
                       },
                       {
                         name:"Salary Income",
-                        value:result.income_analysis.salary_income
+                        value:result.income_analysis?.salary_income || 0
                       }
                     ]}
                     dataKey="value"
@@ -302,13 +290,13 @@ export default function Banking() {
 
             <div className="text-3xl font-bold text-emerald-400">
 
-              {result.financial_indicators.financial_strength_index}
+              {result.financial_indicators?.financial_strength_index || "-"}
 
             </div>
 
             <p className="text-slate-400 mt-2">
 
-              {result.financial_indicators.stability_tag}
+              {result.financial_indicators?.stability_tag || "-"}
 
             </p>
 
@@ -323,9 +311,7 @@ export default function Banking() {
 }
 
 
-/* ========================== */
 /* METRIC CARD */
-/* ========================== */
 
 function Metric({title,value}){
 
@@ -338,7 +324,7 @@ function Metric({title,value}){
       </p>
 
       <h2 className="text-xl font-bold mt-2 text-white">
-        ₹ {value?.toLocaleString()}
+        ₹ {value?.toLocaleString() || "0"}
       </h2>
 
     </div>
