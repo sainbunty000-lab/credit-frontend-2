@@ -1,27 +1,28 @@
 import axios from "axios";
 
-const API="https://credit-backend-production-d988.up.railway.app";
+const API = "https://credit-backend-production-d988.up.railway.app";
 
-export const wcUpload = async (bs,pl)=>{
+export const wcUpload = async (bs, pl) => {
 
-const fd=new FormData();
+  const fd = new FormData();
 
-fd.append("balance_sheet",bs);
-fd.append("profit_loss",pl);
+  fd.append("balance_sheet", bs);
+  fd.append("profit_loss", pl);
 
-return axios.post(`${API}/wc/upload-dual`,fd);
+  return axios.post(`${API}/wc/upload-dual`, fd);
 
-}
+};
 
-export const agriCalculate = async(data)=>
-axios.post(`${API}/agriculture/calculate`,data);
+export const agriCalculate = async (data) => {
+  return axios.post(`${API}/agriculture/calculate`, data);
+};
 
-export const bankingAnalyze = async(file)=>{
+export const bankingAnalyze = async (file) => {
 
-const fd=new FormData();
+  const fd = new FormData();
 
-fd.append("file",file);
+  fd.append("file", file);
 
-return axios.post(`${API}/banking/full-analysis`,fd);
+  return axios.post(`${API}/banking/full-analysis`, fd);
 
-}
+};
