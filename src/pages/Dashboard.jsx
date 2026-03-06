@@ -25,19 +25,40 @@ export default function Dashboard() {
     const stored =
       JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
 
-    const wc = stored.workingCapital?.result || {};
-    const agri = stored.agriculture?.result || {};
-    const banking = stored.banking?.result || {};
+    const wc = stored.workingCapital?.result || null;
+    const agri = stored.agriculture?.result || null;
+    const banking = stored.banking?.analysis || null;
 
-    const wcScore = wc.wc_score || 0;
-    const agriScore = agri.agri_score || 0;
-    const bankingScore =
-      banking.risk_summary?.hygiene_score || 0;
+    const wcScore = wc?.wc_score || null;
+    const agriScore = agri?.agri_score || null;
+    const bankingScore = banking?.risk_summary?.hygiene_score || null;
 
-    const finalScore =
-      wcScore*0.4 + agriScore*0.3 + bankingScore*0.3;
+    /* ===========================
+       DYNAMIC SCORE CALCULATION
+    ============================ */
 
-    let decision = "DECLINED";
+    let finalScore = 0;
+    let weightSum = 0;
+
+    if(wcScore !== null){
+      finalScore += wcScore * 0.4;
+      weightSum += 0.4;
+    }
+
+    if(agriScore !== null){
+      finalScore += agriScore * 0.3;
+      weightSum += 0.3;
+    }
+
+    if(bankingScore !== null){
+      finalScore += bankingScore * 0.3;
+      weightSum += 0.3;
+    }
+
+    if(weightSum > 0)
+      finalScore = finalScore / weightSum;
+
+    let decision="DECLINED";
 
     if(finalScore >= 80) decision="APPROVED";
     else if(finalScore >=65) decision="CONDITIONAL";
@@ -55,15 +76,18 @@ export default function Dashboard() {
 
   },[]);
 
+
   if(!data) return null;
 
-  const COLORS = ["#10b981","#3b82f6"];
+  const COLORS=["#10b981","#3b82f6"];
 
   return(
 
   <div className="space-y-12">
 
-  {/* SCORE SUMMARY */}
+  {/* ==============================
+      CREDIT SUMMARY
+  ============================== */}
 
   <div className="bg-slate-900 p-8 rounded-2xl border border-slate-800">
 
@@ -71,30 +95,27 @@ export default function Dashboard() {
       Credit Assessment Memorandum
     </h2>
 
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div className="grid grid-cols-3 gap-6">
 
-      <Metric
-        title="Working Capital Score"
-        value={data.wcScore}
-      />
+      {data.wcScore !== null &&
+        <Metric title="Working Capital Score" value={data.wcScore}/>
+      }
 
-      <Metric
-        title="Agriculture Score"
-        value={data.agriScore}
-      />
+      {data.agriScore !== null &&
+        <Metric title="Agriculture Score" value={data.agriScore}/>
+      }
 
-      <Metric
-        title="Banking Hygiene Score"
-        value={data.bankingScore}
-      />
+      {data.bankingScore !== null &&
+        <Metric title="Banking Hygiene Score" value={data.bankingScore}/>
+      }
 
     </div>
 
     <div className="mt-6">
 
-      <h3 className="text-slate-400 text-sm">
+      <p className="text-slate-400 text-sm">
         Final Risk Score
-      </h3>
+      </p>
 
       <h2 className="text-3xl font-bold text-white">
         {data.finalScore.toFixed(1)}
@@ -107,185 +128,152 @@ export default function Dashboard() {
   </div>
 
 
-  {/* WORKING CAPITAL */}
+  {/* ==============================
+      WORKING CAPITAL
+  ============================== */}
 
-  <div>
+  {data.wc && (
 
-  <h2 className="text-emerald-400 font-bold mb-4">
-    Working Capital Analysis
-  </h2>
+  <Section title="Working Capital Analysis">
 
-  <div className="grid grid-cols-3 gap-6 mb-6">
+    <div className="grid grid-cols-3 gap-6 mb-6">
 
-    <Metric
-      title="Current Ratio"
-      value={data.wc.current_ratio || 0}
-    />
+      <Metric title="Current Ratio" value={data.wc.current_ratio || 0}/>
+      <Metric title="Quick Ratio" value={data.wc.quick_ratio || "-"}/>
+      <Metric title="Drawing Power" value={`₹ ${data.wc.drawing_power?.toLocaleString() || 0}`}/>
 
-    <Metric
-      title="Quick Ratio"
-      value={data.wc.quick_ratio || "-"}
-    />
+    </div>
 
-    <Metric
-      title="Drawing Power"
-      value={`₹ ${data.wc.drawing_power?.toLocaleString() || 0}`}
-    />
+    <ChartCard>
 
-  </div>
+      <ResponsiveContainer width="100%" height={300}>
 
-  <div className="bg-slate-900 p-6 rounded-xl">
+        <BarChart data={[
+          {name:"Assets",value:data.wc.current_assets || 0},
+          {name:"Liabilities",value:data.wc.current_liabilities || 0},
+          {name:"NWC",value:data.wc.nwc || 0}
+        ]}>
 
-    <ResponsiveContainer width="100%" height={300}>
+          <CartesianGrid strokeDasharray="3 3"/>
+          <XAxis dataKey="name"/>
+          <YAxis/>
+          <Tooltip/>
+          <Legend/>
 
-      <BarChart data={[
-        {
-          name:"Assets",
-          value:data.wc.current_assets || 0
-        },
-        {
-          name:"Liabilities",
-          value:data.wc.current_liabilities || 0
-        },
-        {
-          name:"NWC",
-          value:data.wc.nwc || 0
-        }
-      ]}>
+          <Bar dataKey="value" fill="#3b82f6"/>
 
-        <CartesianGrid strokeDasharray="3 3"/>
-        <XAxis dataKey="name"/>
-        <YAxis/>
-        <Tooltip/>
-        <Legend/>
+        </BarChart>
 
-        <Bar dataKey="value" fill="#3b82f6"/>
+      </ResponsiveContainer>
 
-      </BarChart>
+    </ChartCard>
 
-    </ResponsiveContainer>
+  </Section>
 
-  </div>
-
-  </div>
+  )}
 
 
-  {/* AGRICULTURE */}
+  {/* ==============================
+      AGRICULTURE
+  ============================== */}
 
-  <div>
+  {data.agri && (
 
-  <h2 className="text-emerald-400 font-bold mb-4">
-    Agriculture Analysis
-  </h2>
+  <Section title="Agriculture Analysis">
 
-  <div className="grid grid-cols-3 gap-6 mb-6">
+    <div className="grid grid-cols-3 gap-6 mb-6">
 
-    <Metric
-      title="Disposable Income"
-      value={`₹ ${data.agri.disposable_income?.toLocaleString() || 0}`}
-    />
+      <Metric title="Disposable Income" value={`₹ ${data.agri.disposable_income?.toLocaleString() || 0}`}/>
+      <Metric title="FOIR %" value={`${data.agri.foir_percent || 0}%`}/>
+      <Metric title="Eligible Loan" value={`₹ ${data.agri.eligible_loan_amount?.toLocaleString() || 0}`}/>
 
-    <Metric
-      title="FOIR %"
-      value={`${data.agri.foir_percent || 0}%`}
-    />
+    </div>
 
-    <Metric
-      title="Eligible Loan"
-      value={`₹ ${data.agri.eligible_loan_amount?.toLocaleString() || 0}`}
-    />
+    <ChartCard>
 
-  </div>
+      <ResponsiveContainer width="100%" height={300}>
 
-  <div className="bg-slate-900 p-6 rounded-xl">
+        <PieChart>
 
-    <ResponsiveContainer width="100%" height={300}>
+          <Pie
+            data={[
+              {name:"Documented",value:data.agri.chart_data?.income_split?.documented || 0},
+              {name:"Undocumented",value:data.agri.chart_data?.income_split?.undocumented || 0}
+            ]}
+            outerRadius={120}
+            dataKey="value"
+          >
 
-      <PieChart>
+          {COLORS.map((c,i)=>(
+            <Cell key={i} fill={c}/>
+          ))}
 
-        <Pie
-          data={[
-            {
-              name:"Documented",
-              value:data.agri.chart_data?.income_split?.documented || 0
-            },
-            {
-              name:"Undocumented",
-              value:data.agri.chart_data?.income_split?.undocumented || 0
-            }
-          ]}
-          outerRadius={120}
-          dataKey="value"
-        >
+          </Pie>
 
-        {COLORS.map((c,i)=>(
-          <Cell key={i} fill={c}/>
-        ))}
+          <Tooltip/>
 
-        </Pie>
+        </PieChart>
 
-        <Tooltip/>
+      </ResponsiveContainer>
 
-      </PieChart>
+    </ChartCard>
 
-    </ResponsiveContainer>
+  </Section>
 
-  </div>
-
-  </div>
+  )}
 
 
-  {/* BANKING */}
+  {/* ==============================
+      BANKING
+  ============================== */}
 
-  <div>
+  {data.banking && (
 
-  <h2 className="text-emerald-400 font-bold mb-4">
-    Banking Behaviour
-  </h2>
+  <Section title="Banking Behaviour">
 
-  <div className="grid grid-cols-3 gap-6 mb-6">
+    <div className="grid grid-cols-3 gap-6 mb-6">
 
-    <Metric
-      title="Total Credit"
-      value={`₹ ${data.banking.statement_summary?.total_credit?.toLocaleString() || 0}`}
-    />
+      <Metric
+        title="Total Credit"
+        value={`₹ ${data.banking.statement_summary?.total_credit?.toLocaleString() || 0}`}
+      />
 
-    <Metric
-      title="Total Debit"
-      value={`₹ ${data.banking.statement_summary?.total_debit?.toLocaleString() || 0}`}
-    />
+      <Metric
+        title="Total Debit"
+        value={`₹ ${data.banking.statement_summary?.total_debit?.toLocaleString() || 0}`}
+      />
 
-    <Metric
-      title="Bounce Count"
-      value={data.banking.risk_summary?.bounce_count || "-"}
-    />
+      <Metric
+        title="Bounce Count"
+        value={data.banking.behavior_analysis?.bounce_count || 0}
+      />
 
-  </div>
+    </div>
 
-  <div className="bg-slate-900 p-6 rounded-xl">
+    <ChartCard>
 
-    <ResponsiveContainer width="100%" height={300}>
+      <ResponsiveContainer width="100%" height={300}>
 
-      <BarChart
-        data={data.banking.chart_data?.monthly_trend || []}
-      >
+        <BarChart data={data.banking.chart_data?.monthly_trend || []}>
 
-        <CartesianGrid strokeDasharray="3 3"/>
-        <XAxis dataKey="month"/>
-        <YAxis/>
-        <Tooltip/>
-        <Legend/>
+          <CartesianGrid strokeDasharray="3 3"/>
+          <XAxis dataKey="month"/>
+          <YAxis/>
+          <Tooltip/>
+          <Legend/>
 
-        <Bar dataKey="credit" fill="#3b82f6"/>
-        <Bar dataKey="debit" fill="#ef4444"/>
+          <Bar dataKey="credit" fill="#3b82f6"/>
+          <Bar dataKey="debit" fill="#ef4444"/>
 
-      </BarChart>
+        </BarChart>
 
-    </ResponsiveContainer>
+      </ResponsiveContainer>
 
-  </div>
+    </ChartCard>
 
-  </div>
+  </Section>
+
+  )}
 
   </div>
 
@@ -294,7 +282,7 @@ export default function Dashboard() {
 }
 
 
-/* METRIC CARD */
+/* COMPONENTS */
 
 function Metric({title,value}){
 
@@ -302,22 +290,15 @@ return(
 
 <div className="bg-slate-900 p-5 rounded-xl border border-slate-800">
 
-<p className="text-slate-400 text-sm">
-{title}
-</p>
+<p className="text-slate-400 text-sm">{title}</p>
 
-<h2 className="text-xl font-bold text-white mt-2">
-{value}
-</h2>
+<h2 className="text-xl font-bold text-white mt-2">{value}</h2>
 
 </div>
 
 );
 
 }
-
-
-/* DECISION BADGE */
 
 function Decision({decision}){
 
@@ -327,10 +308,38 @@ if(decision==="APPROVED") color="bg-emerald-500";
 if(decision==="CONDITIONAL") color="bg-yellow-500";
 
 return(
-
 <span className={`${color} px-4 py-2 rounded-md text-black font-semibold mt-3 inline-block`}>
 {decision}
 </span>
+);
+
+}
+
+function Section({title,children}){
+
+return(
+
+<div>
+
+<h2 className="text-emerald-400 font-bold mb-4">
+{title}
+</h2>
+
+{children}
+
+</div>
+
+);
+
+}
+
+function ChartCard({children}){
+
+return(
+
+<div className="bg-slate-900 p-6 rounded-xl border border-slate-800">
+{children}
+</div>
 
 );
 
