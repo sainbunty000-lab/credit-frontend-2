@@ -1,23 +1,29 @@
-const KEY="credit_app_v1";
+const STORAGE_KEY = "credit_app_v1";
 
-export function loadApp(){
+/* LOAD APP DATA */
 
-return JSON.parse(localStorage.getItem(KEY)) || {};
-
+export function loadApp() {
+  return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
 }
 
-export function saveApp(data){
+/* SAVE APP DATA */
 
-localStorage.setItem(KEY,JSON.stringify(data));
-
+export function saveApp(data) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 }
 
-export function updateModule(module,data){
+/* SAVE CASE HISTORY */
 
-const app=loadApp();
+export function saveCurrentCase(caseData) {
 
-app[module]=data;
+  const saved =
+    JSON.parse(localStorage.getItem("saved_cases")) || [];
 
-saveApp(app);
+  saved.push(caseData);
+
+  localStorage.setItem(
+    "saved_cases",
+    JSON.stringify(saved)
+  );
 
 }
