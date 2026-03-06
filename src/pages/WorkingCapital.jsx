@@ -13,12 +13,6 @@ import {
   EyeOff
 } from "lucide-react";
 
-import AnimatedKPI from "../components/AnimatedKPI";
-import MetricCard from "../components/MetricCard";
-import SectionCard from "../components/Section";
-
-import { wcUploadDual } from "../services/api";
-
 import {
   BarChart,
   Bar,
@@ -29,6 +23,7 @@ import {
   Cell
 } from "recharts";
 
+const API = "https://credit-backend-production-d988.up.railway.app";
 const STORAGE_KEY = "credit_app_v1";
 
 export default function WorkingCapital() {
@@ -62,32 +57,39 @@ export default function WorkingCapital() {
       maximumFractionDigits: 0
     }).format(val || 0);
 
-  /* SAVE GLOBAL STORAGE */
-
   useEffect(() => {
     const existing = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
     localStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({
-        ...existing,
-        workingCapital: { form, result }
-      })
+      JSON.stringify({ ...existing, workingCapital: { form, result } })
     );
   }, [form, result]);
 
-
-  /* FILE EXTRACTION */
+  /* =============================
+     FILE EXTRACTION
+  ============================== */
 
   const extractFiles = async () => {
 
     if (!balanceSheet || !profitLoss)
       return alert("Upload both files");
 
+    const fd = new FormData();
+    fd.append("balance_sheet", balanceSheet);
+    fd.append("profit_loss", profitLoss);
+
     try {
 
       setLoading(true);
 
-      const data = await wcUploadDual(balanceSheet, profitLoss);
+      const res = await fetch(`${API}/wc/upload-dual`, {
+        method: "POST",
+        body: fd
+      });
+
+      const data = await res.json();
+
+      setLoading(false);
 
       if (data) {
         setForm(data.extracted_values || data);
@@ -96,19 +98,14 @@ export default function WorkingCapital() {
       }
 
     } catch {
-
-      alert("Server Error");
-
-    } finally {
-
       setLoading(false);
-
+      alert("Server Error");
     }
-
   };
 
-
-  /* MANUAL CALCULATION */
+  /* =============================
+     CALCULATE
+  ============================== */
 
   const calculate = () => {
 
@@ -140,7 +137,6 @@ export default function WorkingCapital() {
     });
 
     setShowResults(true);
-
   };
 
   return (
@@ -153,7 +149,7 @@ export default function WorkingCapital() {
 
         <div className="flex items-center gap-4">
 
-          <BarChart3 className="text-blue-500 w-8 h-8"/>
+          <BarChart3 className="text-blue-500 w-8 h-8" />
 
           <div>
             <h2 className="text-3xl font-extrabold text-white">
@@ -172,14 +168,13 @@ export default function WorkingCapital() {
             onClick={() => setShowResults(!showResults)}
             className="flex items-center gap-2 bg-slate-800 px-4 py-2 rounded-xl"
           >
-            {showResults ? <EyeOff size={18}/> : <Eye size={18}/>}
+            {showResults ? <EyeOff size={18} /> : <Eye size={18} />}
             {showResults ? "Hide Analysis" : "Show Analysis"}
           </button>
 
         )}
 
       </div>
-
 
       <div className="max-w-7xl mx-auto space-y-8">
 
@@ -189,14 +184,14 @@ export default function WorkingCapital() {
 
           <UploadCard
             label="Balance Sheet"
-            icon={<FileText size={20}/>}
-            onChange={(e)=>setBalanceSheet(e.target.files[0])}
+            icon={<FileText size={20} />}
+            onChange={(e) => setBalanceSheet(e.target.files[0])}
           />
 
           <UploadCard
             label="Profit & Loss"
-            icon={<TrendingUp size={20}/>}
-            onChange={(e)=>setProfitLoss(e.target.files[0])}
+            icon={<TrendingUp size={20} />}
+            onChange={(e) => setProfitLoss(e.target.files[0])}
           />
 
           <button
@@ -204,12 +199,11 @@ export default function WorkingCapital() {
             disabled={loading}
             className="bg-blue-600 hover:bg-blue-500 text-white py-4 rounded-2xl flex items-center justify-center gap-2"
           >
-            <UploadCloud size={20}/>
+            <UploadCloud size={20} />
             {loading ? "Processing..." : "Extract Data"}
           </button>
 
         </div>
-
 
         {/* INPUTS */}
 
@@ -244,7 +238,6 @@ export default function WorkingCapital() {
 
         </div>
 
-
         {/* RESULTS */}
 
         {result && showResults && (
@@ -255,70 +248,62 @@ export default function WorkingCapital() {
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
 
-              <AnimatedKPI title="NWC" value={formatINR(result.nwc)} icon={<Wallet/>}/>
-              <AnimatedKPI title="Current Ratio" value={result.current_ratio} icon={<ShieldCheck/>}/>
-              <AnimatedKPI title="WC Turnover" value={result.wc_turnover} icon={<ArrowUpRight/>}/>
-              <AnimatedKPI title="Drawing Power" value={formatINR(result.drawing_power)} icon={<IndianRupee/>}/>
+              <MetricCard title="NWC" value={formatINR(result.nwc)} />
+              <MetricCard title="Current Ratio" value={result.current_ratio} />
+              <MetricCard title="WC Turnover" value={result.wc_turnover} />
+              <MetricCard title="Drawing Power" value={formatINR(result.drawing_power)} />
 
             </div>
 
+            {/* MPBF */}
 
-            {/* MPBF + RISK */}
+            <Section title="Bank Finance Assessment (MPBF)">
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
 
-              <div className="lg:col-span-2">
-
-                <SectionCard title="Bank Finance Assessment (MPBF)">
-
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-
-                    <MetricCard title="Drawing Power" value={formatINR(result.drawing_power)}/>
-                    <MetricCard title="MPBF Eligible" value={formatINR(result.mpbf_limit)}/>
-                    <MetricCard title="Turnover Limit" value={formatINR(result.turnover_limit)}/>
-                    <MetricCard title="Final Eligibility" value={formatINR(Math.max(result.mpbf_limit,result.turnover_limit))}/>
-
-                  </div>
-
-                </SectionCard>
+                <MetricCard title="Drawing Power" value={formatINR(result.drawing_power)}/>
+                <MetricCard title="MPBF Eligible" value={formatINR(result.mpbf_limit)}/>
+                <MetricCard title="Turnover Limit" value={formatINR(result.turnover_limit)}/>
+                <MetricCard title="Final Eligibility" value={formatINR(Math.max(result.mpbf_limit,result.turnover_limit))}/>
 
               </div>
 
+            </Section>
 
-              {/* CHART */}
+            {/* CHART */}
 
-              <div className="bg-[#0f172a] p-6 rounded-3xl border border-slate-800">
+            <div className="bg-[#0f172a] p-6 rounded-3xl border border-slate-800">
 
-                <h3 className="text-white text-sm font-bold mb-6 flex items-center gap-2">
-                  <BarChart3 size={18}/>
-                  Asset Composition
-                </h3>
+              <h3 className="text-white text-sm font-bold mb-6 flex items-center gap-2">
+                <BarChart3 size={18}/>
+                Asset Composition
+              </h3>
 
-                <ResponsiveContainer width="100%" height={280}>
+              <ResponsiveContainer width="100%" height={280}>
 
-                  <BarChart
-                    data={[
-                      {name:"Assets",value:Number(form.current_assets||0)},
-                      {name:"Liabilities",value:Number(form.current_liabilities||0)},
-                      {name:"NWC",value:result.nwc}
-                    ]}
-                  >
+                <BarChart
+                  data={[
+                    {name:"Assets",value:Number(form.current_assets||0)},
+                    {name:"Liabilities",value:Number(form.current_liabilities||0)},
+                    {name:"NWC",value:result.nwc}
+                  ]}
+                >
 
-                    <XAxis dataKey="name"/>
-                    <YAxis hide/>
-                    <Tooltip/>
+                  <XAxis dataKey="name"/>
+                  <YAxis hide/>
+                  <Tooltip/>
 
-                    <Bar dataKey="value" radius={[6,6,0,0]}>
-                      <Cell fill="#3b82f6"/>
-                      <Cell fill="#ef4444"/>
-                      <Cell fill="#10b981"/>
-                    </Bar>
+                  <Bar dataKey="value">
 
-                  </BarChart>
+                    <Cell fill="#3b82f6"/>
+                    <Cell fill="#ef4444"/>
+                    <Cell fill="#10b981"/>
 
-                </ResponsiveContainer>
+                  </Bar>
 
-              </div>
+                </BarChart>
+
+              </ResponsiveContainer>
 
             </div>
 
@@ -331,5 +316,96 @@ export default function WorkingCapital() {
     </div>
 
   );
+}
 
-              }
+/* INPUT FIELD */
+
+function InputField({label,value,onChange}){
+
+  return(
+
+    <div>
+
+      <label className="text-xs text-slate-500 uppercase">
+        {label}
+      </label>
+
+      <input
+        type="number"
+        value={value||""}
+        onChange={(e)=>onChange(e.target.value)}
+        className="w-full bg-[#070b14] text-white px-3 py-3 rounded-xl border border-slate-800 mt-1"
+      />
+
+    </div>
+
+  )
+
+}
+
+/* UPLOAD CARD */
+
+function UploadCard({label,icon,onChange}){
+
+  return(
+
+    <div className="bg-[#0f172a] p-6 rounded-2xl border border-slate-800">
+
+      <div className="flex items-center gap-2 mb-3 text-slate-400">
+        {icon}
+        <span className="text-sm font-semibold">{label}</span>
+      </div>
+
+      <input
+        type="file"
+        onChange={onChange}
+        className="w-full text-xs text-slate-400"
+      />
+
+    </div>
+
+  )
+
+}
+
+/* METRIC */
+
+function MetricCard({title,value}){
+
+  return(
+
+    <div className="bg-[#0f172a] p-5 rounded-xl border border-slate-800">
+
+      <p className="text-slate-400 text-sm">
+        {title}
+      </p>
+
+      <h2 className="text-xl font-bold mt-2 text-white">
+        {value}
+      </h2>
+
+    </div>
+
+  );
+
+}
+
+/* SECTION */
+
+function Section({title,children}){
+
+return(
+
+<div>
+
+<h2 className="text-emerald-400 font-bold mb-4">
+{title}
+</h2>
+
+{children}
+
+</div>
+
+);
+
+}
