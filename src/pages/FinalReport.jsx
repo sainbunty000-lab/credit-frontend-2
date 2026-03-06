@@ -9,42 +9,49 @@ export default function FinalReport() {
   const [report, setReport] = useState(null);
   const [data, setData] = useState(null);
 
-  /* ================================
-     LOAD DATA + CREATE CAM REPORT
-  ================================= */
-
   useEffect(() => {
 
     const stored = JSON.parse(localStorage.getItem("credit_app_v1")) || {};
 
-    const wc = stored.workingCapital?.result || {};
-    const agri = stored.agriculture?.result || {};
-    const banking = stored.banking?.analysis || {};
+    const wc = stored.workingCapital?.result || null;
+    const agri = stored.agriculture?.result || null;
+    const banking = stored.banking?.result || null;
 
-    const wcScore = wc?.wc_score || 0;
-    const agriScore = agri?.agri_score || 0;
-    const bankingScore = banking?.risk_summary?.hygiene_score || 0;
+    const wcScore = wc?.wc_score ?? null;
+    const agriScore = agri?.agri_score ?? null;
+    const bankingScore = banking?.risk_summary?.hygiene_score ?? null;
 
-    const finalScore =
-      wcScore * 0.4 +
-      agriScore * 0.3 +
-      bankingScore * 0.3;
+    /* SCORE CALCULATION (DYNAMIC) */
 
-    let decision;
+    let finalScore = 0;
+    let weight = 0;
 
-    if (finalScore >= 80)
-      decision = "APPROVED";
-    else if (finalScore >= 65)
-      decision = "CONDITIONAL APPROVAL";
-    else
-      decision = "DECLINED";
+    if (wcScore !== null) {
+      finalScore += wcScore * 0.4;
+      weight += 0.4;
+    }
 
-    /* =============================
-       LIMIT CALCULATION
-    ============================== */
+    if (agriScore !== null) {
+      finalScore += agriScore * 0.3;
+      weight += 0.3;
+    }
 
-    const wcLimit = wc?.drawing_power || 0;
-    const agriLimit = agri?.eligible_loan_amount || 0;
+    if (bankingScore !== null) {
+      finalScore += bankingScore * 0.3;
+      weight += 0.3;
+    }
+
+    if (weight > 0) finalScore = finalScore / weight;
+
+    let decision = "DECLINED";
+
+    if (finalScore >= 80) decision = "APPROVED";
+    else if (finalScore >= 65) decision = "CONDITIONAL APPROVAL";
+
+    /* LIMIT CALCULATION */
+
+    const wcLimit = wc?.drawing_power ?? 0;
+    const agriLimit = agri?.eligible_loan_amount ?? 0;
 
     const recommendedLimit = Math.max(wcLimit, agriLimit);
 
@@ -66,10 +73,7 @@ export default function FinalReport() {
 
   }, []);
 
-
-  /* ================================
-     EXPORT PDF
-  ================================= */
+  /* EXPORT PDF */
 
   const exportPDF = async () => {
 
@@ -110,15 +114,11 @@ export default function FinalReport() {
 
   };
 
-
   if (!report || !data) return null;
-
 
   return (
 
     <div className="space-y-8">
-
-      {/* CAM REPORT */}
 
       <div
         id="cam-report"
@@ -134,30 +134,36 @@ export default function FinalReport() {
           </h2>
 
           <p className="text-sm text-slate-400">
-            AI Powered Agri Credit Intelligence Engine
+            AI Powered Credit Intelligence Engine
           </p>
 
         </div>
-
 
         {/* SCORE SUMMARY */}
 
         <div className="grid grid-cols-3 gap-6">
 
-          <ScoreCard title="Working Capital Score" value={report.wcScore} />
+          {report.wcScore !== null &&
+            <ScoreCard title="Working Capital Score" value={report.wcScore} />
+          }
 
-          <ScoreCard title="Agriculture Score" value={report.agriScore} />
+          {report.agriScore !== null &&
+            <ScoreCard title="Agriculture Score" value={report.agriScore} />
+          }
 
-          <ScoreCard title="Banking Hygiene Score" value={report.bankingScore} />
+          {report.bankingScore !== null &&
+            <ScoreCard title="Banking Hygiene Score" value={report.bankingScore} />
+          }
 
         </div>
-
 
         {/* FINAL DECISION */}
 
         <div className="bg-slate-900 p-6 rounded-lg border border-slate-700">
 
-          <p className="text-slate-400 text-sm">Final Risk Score</p>
+          <p className="text-slate-400 text-sm">
+            Final Risk Score
+          </p>
 
           <h3 className="text-3xl font-bold text-white">
             {report.finalScore.toFixed(1)}
@@ -169,51 +175,58 @@ export default function FinalReport() {
 
         </div>
 
+        {/* WORKING CAPITAL */}
 
-        {/* WORKING CAPITAL DETAILS */}
+        {data.wc && (
 
-        <Section title="Working Capital Analysis">
+          <Section title="Working Capital Analysis">
 
-          <Metric label="Current Ratio" value={data.wc.current_ratio} />
+            <Metric label="Current Ratio" value={data.wc.current_ratio} />
+            <Metric label="WC Turnover" value={data.wc.wc_turnover} />
+            <Metric label="Drawing Power" value={`₹ ${data.wc.drawing_power?.toLocaleString()}`} />
 
-          <Metric label="Quick Ratio" value={data.wc.quick_ratio} />
+          </Section>
 
-          <Metric label="Drawing Power" value={`₹ ${data.wc.drawing_power}`} />
+        )}
 
-        </Section>
+        {/* AGRICULTURE */}
 
+        {data.agri && (
 
-        {/* AGRICULTURE DETAILS */}
+          <Section title="Agriculture Analysis">
 
-        <Section title="Agriculture Analysis">
+            <Metric label="Disposable Income" value={`₹ ${data.agri.disposable_income?.toLocaleString()}`} />
+            <Metric label="FOIR %" value={`${data.agri.foir_percent}%`} />
+            <Metric label="Eligible Loan" value={`₹ ${data.agri.eligible_loan_amount?.toLocaleString()}`} />
 
-          <Metric label="Disposable Income" value={`₹ ${data.agri.disposable_income}`} />
+          </Section>
 
-          <Metric label="FOIR %" value={`${data.agri.foir_percent}%`} />
+        )}
 
-          <Metric label="Eligible Loan" value={`₹ ${data.agri.eligible_loan_amount}`} />
+        {/* BANKING */}
 
-        </Section>
+        {data.banking && (
 
+          <Section title="Banking Behaviour">
 
-        {/* BANKING DETAILS */}
+            <Metric
+              label="Total Credit"
+              value={`₹ ${data.banking.statement_summary?.total_credit?.toLocaleString()}`}
+            />
 
-        <Section title="Banking Behaviour">
+            <Metric
+              label="Total Debit"
+              value={`₹ ${data.banking.statement_summary?.total_debit?.toLocaleString()}`}
+            />
 
-          <Metric label="Total Credit"
-            value={`₹ ${data.banking.statement_summary?.total_credit}`}
-          />
+            <Metric
+              label="Bounce Count"
+              value={data.banking.behavior_analysis?.bounce_count ?? 0}
+            />
 
-          <Metric label="Total Debit"
-            value={`₹ ${data.banking.statement_summary?.total_debit}`}
-          />
+          </Section>
 
-          <Metric label="Bounce Count"
-            value={data.banking.behavior_analysis?.bounce_count}
-          />
-
-        </Section>
-
+        )}
 
         {/* LIMIT */}
 
@@ -224,15 +237,12 @@ export default function FinalReport() {
           </p>
 
           <h3 className="text-3xl font-bold text-emerald-400">
-            ₹ {report.recommendedLimit?.toLocaleString()}
+            ₹ {report.recommendedLimit.toLocaleString()}
           </h3>
 
         </div>
 
       </div>
-
-
-      {/* EXPORT BUTTON */}
 
       <button
         onClick={exportPDF}
@@ -248,9 +258,7 @@ export default function FinalReport() {
 }
 
 
-/* ================================
-   COMPONENTS
-================================ */
+/* COMPONENTS */
 
 function ScoreCard({ title, value }) {
 
@@ -270,7 +278,6 @@ function ScoreCard({ title, value }) {
 
 }
 
-
 function Metric({ label, value }) {
 
   return (
@@ -288,7 +295,6 @@ function Metric({ label, value }) {
   );
 
 }
-
 
 function Section({ title, children }) {
 
@@ -309,7 +315,6 @@ function Section({ title, children }) {
   );
 
 }
-
 
 function DecisionBadge({ decision }) {
 
