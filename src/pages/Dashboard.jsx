@@ -27,11 +27,11 @@ export default function Dashboard() {
 
     const wc = stored.workingCapital?.result || null;
     const agri = stored.agriculture?.result || null;
-    const banking = stored.banking?.analysis || null;
+    const banking = stored.banking?.result || null;
 
-    const wcScore = wc?.wc_score || null;
-    const agriScore = agri?.agri_score || null;
-    const bankingScore = banking?.risk_summary?.hygiene_score || null;
+    const wcScore = wc?.wc_score ?? null;
+    const agriScore = agri?.agri_score ?? null;
+    const bankingScore = banking?.risk_summary?.hygiene_score ?? null;
 
     /* ===========================
        DYNAMIC SCORE CALCULATION
@@ -118,7 +118,7 @@ export default function Dashboard() {
       </p>
 
       <h2 className="text-3xl font-bold text-white">
-        {data.finalScore.toFixed(1)}
+        {data.finalScore ? data.finalScore.toFixed(1) : "0"}
       </h2>
 
       <Decision decision={data.decision}/>
@@ -138,9 +138,9 @@ export default function Dashboard() {
 
     <div className="grid grid-cols-3 gap-6 mb-6">
 
-      <Metric title="Current Ratio" value={data.wc.current_ratio || 0}/>
-      <Metric title="Quick Ratio" value={data.wc.quick_ratio || "-"}/>
-      <Metric title="Drawing Power" value={`₹ ${data.wc.drawing_power?.toLocaleString() || 0}`}/>
+      <Metric title="Current Ratio" value={data.wc.current_ratio ?? 0}/>
+      <Metric title="Quick Ratio" value={data.wc.quick_ratio ?? "-"}/>
+      <Metric title="Drawing Power" value={`₹ ${(data.wc.drawing_power ?? 0).toLocaleString()}`}/>
 
     </div>
 
@@ -149,9 +149,9 @@ export default function Dashboard() {
       <ResponsiveContainer width="100%" height={300}>
 
         <BarChart data={[
-          {name:"Assets",value:data.wc.current_assets || 0},
-          {name:"Liabilities",value:data.wc.current_liabilities || 0},
-          {name:"NWC",value:data.wc.nwc || 0}
+          {name:"Assets",value:data.wc.current_assets ?? 0},
+          {name:"Liabilities",value:data.wc.current_liabilities ?? 0},
+          {name:"NWC",value:data.wc.nwc ?? 0}
         ]}>
 
           <CartesianGrid strokeDasharray="3 3"/>
@@ -183,9 +183,9 @@ export default function Dashboard() {
 
     <div className="grid grid-cols-3 gap-6 mb-6">
 
-      <Metric title="Disposable Income" value={`₹ ${data.agri.disposable_income?.toLocaleString() || 0}`}/>
-      <Metric title="FOIR %" value={`${data.agri.foir_percent || 0}%`}/>
-      <Metric title="Eligible Loan" value={`₹ ${data.agri.eligible_loan_amount?.toLocaleString() || 0}`}/>
+      <Metric title="Disposable Income" value={`₹ ${(data.agri.disposable_income ?? 0).toLocaleString()}`}/>
+      <Metric title="FOIR %" value={`${data.agri.foir_percent ?? 0}%`}/>
+      <Metric title="Eligible Loan" value={`₹ ${(data.agri.eligible_loan_amount ?? 0).toLocaleString()}`}/>
 
     </div>
 
@@ -197,8 +197,8 @@ export default function Dashboard() {
 
           <Pie
             data={[
-              {name:"Documented",value:data.agri.chart_data?.income_split?.documented || 0},
-              {name:"Undocumented",value:data.agri.chart_data?.income_split?.undocumented || 0}
+              {name:"Documented",value:data.agri.chart_data?.income_split?.documented ?? 0},
+              {name:"Undocumented",value:data.agri.chart_data?.income_split?.undocumented ?? 0}
             ]}
             outerRadius={120}
             dataKey="value"
@@ -235,17 +235,17 @@ export default function Dashboard() {
 
       <Metric
         title="Total Credit"
-        value={`₹ ${data.banking.statement_summary?.total_credit?.toLocaleString() || 0}`}
+        value={`₹ ${(data.banking.statement_summary?.total_credit ?? 0).toLocaleString()}`}
       />
 
       <Metric
         title="Total Debit"
-        value={`₹ ${data.banking.statement_summary?.total_debit?.toLocaleString() || 0}`}
+        value={`₹ ${(data.banking.statement_summary?.total_debit ?? 0).toLocaleString()}`}
       />
 
       <Metric
         title="Bounce Count"
-        value={data.banking.behavior_analysis?.bounce_count || 0}
+        value={data.banking.behavior_analysis?.bounce_count ?? 0}
       />
 
     </div>
@@ -254,7 +254,7 @@ export default function Dashboard() {
 
       <ResponsiveContainer width="100%" height={300}>
 
-        <BarChart data={data.banking.chart_data?.monthly_trend || []}>
+        <BarChart data={data.banking.chart_data?.monthly_trend ?? []}>
 
           <CartesianGrid strokeDasharray="3 3"/>
           <XAxis dataKey="month"/>
