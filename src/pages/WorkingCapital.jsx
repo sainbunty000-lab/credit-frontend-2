@@ -97,14 +97,40 @@ export default function WorkingCapital() {
 
       const data = await res.json();
 
-      if (data) {
-        setForm(data.extracted_values || {});
-        setResult(data.calculations || null);
+      console.log("Backend Response:", data);
+
+      if (data?.success) {
+
+        /* AUTO FILL FORM */
+
+        setForm(prev => ({
+          ...prev,
+          current_assets: data.current_assets || "",
+          current_liabilities: data.current_liabilities || "",
+          receivables: data.receivables || "",
+          annual_sales: data.annual_sales || "",
+          cogs: data.cogs || ""
+        }));
+
+        /* AUTO SET RESULT */
+
+        setResult({
+          nwc: data.nwc,
+          current_ratio: data.current_ratio,
+          wc_turnover: data.wc_turnover,
+          drawing_power: data.drawing_power,
+          mpbf_limit: data.annual_sales * 0.25,
+          turnover_limit: data.annual_sales * 0.20,
+          liquidity_score: data.liquidity_score
+        });
+
         setShowResults(true);
+
       }
 
-    } catch {
+    } catch (err) {
 
+      console.error(err);
       alert("Server Error");
 
     } finally {
@@ -163,14 +189,10 @@ export default function WorkingCapital() {
 
     <div className="min-h-screen bg-[#070b14] p-4 sm:p-6 text-slate-200">
 
-      {/* NAVIGATION BUTTONS */}
-
       <NavigationButtons
         prev="/"
         next="/agriculture"
       />
-
-      {/* HEADER */}
 
       <div className="flex justify-between items-center mb-8 max-w-7xl mx-auto">
 
@@ -206,20 +228,18 @@ export default function WorkingCapital() {
 
       <div className="max-w-7xl mx-auto space-y-8">
 
-        {/* FILE UPLOAD */}
-
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 
           <UploadCard
             label="Balance Sheet"
             icon={<FileText size={20}/>}
-            onChange={(e)=>setBalanceSheet(e.target.files[0])}
+            onChange={(e)=>setBalanceSheet(e.target.files?.[0])}
           />
 
           <UploadCard
             label="Profit & Loss"
             icon={<TrendingUp size={20}/>}
-            onChange={(e)=>setProfitLoss(e.target.files[0])}
+            onChange={(e)=>setProfitLoss(e.target.files?.[0])}
           />
 
           <button
@@ -265,78 +285,6 @@ export default function WorkingCapital() {
           </div>
 
         </div>
-
-        {/* RESULTS */}
-
-        {result && showResults && (
-
-          <div className="space-y-8">
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-
-              <MetricCard title="NWC" value={formatINR(result.nwc)} />
-              <MetricCard title="Current Ratio" value={result.current_ratio} />
-              <MetricCard title="WC Turnover" value={result.wc_turnover} />
-              <MetricCard title="Drawing Power" value={formatINR(result.drawing_power)} />
-
-            </div>
-
-            {/* MPBF */}
-
-            <Section title="Bank Finance Assessment (MPBF)">
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
-
-                <MetricCard title="Drawing Power" value={formatINR(result.drawing_power)}/>
-                <MetricCard title="MPBF Eligible" value={formatINR(result.mpbf_limit)}/>
-                <MetricCard title="Turnover Limit" value={formatINR(result.turnover_limit)}/>
-                <MetricCard title="Final Eligibility" value={formatINR(Math.max(result.mpbf_limit,result.turnover_limit))}/>
-
-              </div>
-
-            </Section>
-
-            {/* CHART */}
-
-            <div className="bg-[#0f172a] p-4 sm:p-6 rounded-3xl border border-slate-800 overflow-x-auto">
-
-              <h3 className="text-white text-sm font-bold mb-6 flex items-center gap-2">
-                <BarChart3 size={18}/>
-                Asset Composition
-              </h3>
-
-              <ResponsiveContainer width="100%" height={320}>
-
-                <BarChart
-                  data={[
-                    {name:"Assets",value:Number(form.current_assets||0)},
-                    {name:"Liabilities",value:Number(form.current_liabilities||0)},
-                    {name:"NWC",value:result.nwc}
-                  ]}
-                  barSize={40}
-                >
-
-                  <XAxis dataKey="name"/>
-                  <YAxis/>
-                  <Tooltip/>
-
-                  <Bar dataKey="value">
-
-                    <Cell fill="#3b82f6"/>
-                    <Cell fill="#ef4444"/>
-                    <Cell fill="#10b981"/>
-
-                  </Bar>
-
-                </BarChart>
-
-              </ResponsiveContainer>
-
-            </div>
-
-          </div>
-
-        )}
 
       </div>
 
@@ -386,6 +334,7 @@ function UploadCard({label,icon,onChange}){
 
       <input
         type="file"
+        accept=".pdf,.xlsx,.xls"
         onChange={onChange}
         className="w-full text-xs text-slate-400"
       />
@@ -393,47 +342,5 @@ function UploadCard({label,icon,onChange}){
     </div>
 
   )
-
-}
-
-/* METRIC */
-
-function MetricCard({title,value}){
-
-  return(
-
-    <div className="bg-[#0f172a] p-5 rounded-xl border border-slate-800">
-
-      <p className="text-slate-400 text-sm">
-        {title}
-      </p>
-
-      <h2 className="text-xl font-bold mt-2 text-white">
-        {value}
-      </h2>
-
-    </div>
-
-  );
-
-}
-
-/* SECTION */
-
-function Section({title,children}){
-
-return(
-
-<div>
-
-<h2 className="text-emerald-400 font-bold mb-4">
-{title}
-</h2>
-
-{children}
-
-</div>
-
-);
 
 }
