@@ -8,19 +8,19 @@ return (
 
 <>
 
-{/* TOP BUTTONS */}
+{/* TOP NAVIGATION */}
 
-<div className="fixed top-4 left-4 right-4 flex justify-between">
+<div className="fixed top-4 left-4 right-4 flex justify-between z-50">
 
 <button
-onClick={() => navigate(prev)}
+onClick={() => prev && navigate(prev)}
 className="bg-slate-800 px-4 py-2 rounded text-white"
 >
 ← Previous
 </button>
 
 <button
-onClick={() => navigate(next)}
+onClick={() => next && navigate(next)}
 className="bg-emerald-600 px-4 py-2 rounded text-white"
 >
 Next →
@@ -29,9 +29,9 @@ Next →
 </div>
 
 
-{/* BOTTOM BUTTONS */}
+{/* BOTTOM NAVIGATION */}
 
-<div className="fixed bottom-4 left-4 right-4 flex justify-between">
+<div className="fixed bottom-4 left-4 right-4 flex justify-between z-50">
 
 <button
 onClick={() => navigate("/") }
@@ -41,7 +41,7 @@ LOS Home
 </button>
 
 <button
-onClick={() => navigate("/final")}
+onClick={() => navigate("/final-report")}
 className="bg-blue-600 px-5 py-2 rounded text-white"
 >
 Export Report
