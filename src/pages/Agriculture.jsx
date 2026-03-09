@@ -142,7 +142,7 @@ setLoading(false);
 
 return(
 
-<div className="min-h-screen bg-[#070b14] p-4 sm:p-6 pt-20 pb-24 text-slate-200">
+<div className="min-h-screen bg-[#070b14] p-4 sm:p-6 pt-20 pb-32 text-slate-200">
 
 {/* NAVIGATION */}
 
