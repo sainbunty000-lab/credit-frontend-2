@@ -1,105 +1,56 @@
 const API = "https://credit-backend-production-d988.up.railway.app";
 
-/* ==============================
-   AGRICULTURE CALCULATION
-============================== */
+/* AGRICULTURE */
 
 export const agriCalculate = async (data) => {
 
-  try {
+  const res = await fetch(`${API}/agriculture/calculate`,{
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json"
+    },
+    body:JSON.stringify(data)
+  });
 
-    const res = await fetch(`${API}/agri`,{
-      method:"POST",
-      headers:{
-        "Content-Type":"application/json"
-      },
-      body:JSON.stringify(data)
-    });
-
-    if(!res.ok){
-      throw new Error("Agriculture API error");
-    }
-
-    const json = await res.json();
-    return json;
-
-  } catch(err){
-
-    console.error("Agri API Error:",err);
-
-    return {
-      status:"Error",
-      message:"Agriculture service unavailable"
-    };
-
-  }
-
+  return res.json();
 };
 
 
-/* ==============================
-   BANKING STATEMENT ANALYSIS
-============================== */
+/* BANKING */
 
 export const bankingAnalyze = async (formData) => {
 
-  try{
+  const res = await fetch(`${API}/banking/full-analysis`,{
+    method:"POST",
+    body:formData
+  });
 
-    const res = await fetch(`${API}/banking`,{
-      method:"POST",
-      body:formData
-    });
-
-    if(!res.ok){
-      throw new Error("Banking API error");
-    }
-
-    const json = await res.json();
-    return json;
-
-  }catch(err){
-
-    console.error("Banking API Error:",err);
-
-    return {
-      status:"Error",
-      message:"Banking analysis failed"
-    };
-
-  }
-
+  return res.json();
 };
 
 
-/* ==============================
-   WORKING CAPITAL ANALYSIS
-============================== */
+/* WORKING CAPITAL */
 
-export const wcAnalyze = async (formData) => {
+export const wcUploadDual = async (formData) => {
 
-  try{
+  const res = await fetch(`${API}/wc/upload-dual`,{
+    method:"POST",
+    body:formData
+  });
 
-    const res = await fetch(`${API}/wc`,{
-      method:"POST",
-      body:formData
-    });
+  return res.json();
+};
 
-    if(!res.ok){
-      throw new Error("Working Capital API error");
-    }
 
-    const json = await res.json();
-    return json;
+export const wcManualCalc = async (data) => {
 
-  }catch(err){
+  const res = await fetch(`${API}/wc/manual-calc`,{
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json"
+    },
+    body:JSON.stringify(data)
+  });
 
-    console.error("WC API Error:",err);
-
-    return {
-      status:"Error",
-      message:"Working Capital analysis failed"
-    };
-
-  }
-
+  return res.json();
 };
