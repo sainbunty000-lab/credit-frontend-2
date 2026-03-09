@@ -5,19 +5,30 @@ import ExportCAM from "../components/ExportCAM";
 
 import {
   Leaf,
-  Calculator,
-  TrendingUp,
-  FileText,
   CheckCircle2,
-  XCircle,
-  ShieldAlert
+  XCircle
 } from "lucide-react";
+
+import {
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  ResponsiveContainer,
+  CartesianGrid
+} from "recharts";
 
 import { agriCalculate } from "../services/api";
 
 const STORAGE_KEY = "credit_app_v1";
 
-export default function Agriculture() {
+const COLORS = ["#10b981","#3b82f6"];
+
+export default function Agriculture(){
 
 const [form,setForm] = useState({
 documented_income:"",
@@ -46,11 +57,12 @@ setResult(stored.agriculture.result || null);
 
 }
 
-}catch(e){
+}catch{
 console.log("Storage load failed");
 }
 
 },[]);
+
 
 /* SAVE STORAGE */
 
@@ -75,6 +87,7 @@ console.log("Storage save failed");
 
 },[form,result]);
 
+
 /* FORMAT INR */
 
 const formatINR = (val)=>
@@ -83,6 +96,7 @@ style:"currency",
 currency:"INR",
 maximumFractionDigits:0
 }).format(Math.round(val || 0));
+
 
 /* INPUT CHANGE */
 
@@ -96,6 +110,7 @@ setForm(prev=>({
 }));
 
 };
+
 
 /* CALCULATE */
 
@@ -140,11 +155,22 @@ setLoading(false);
 
 };
 
+
+/* CHART DATA */
+
+const incomePie = [
+{name:"Documented",value:Number(form.documented_income||0)},
+{name:"Undocumented",value:Number(form.undocumented_income_monthly||0)}
+];
+
+const loanChart = result ? [
+{name:"Disposable Income",value:result.disposable_income},
+{name:"Eligible Loan",value:result.eligible_loan_amount}
+]:[];
+
 return(
 
 <div className="min-h-screen bg-[#070b14] p-4 sm:p-6 pt-20 pb-32 text-slate-200">
-
-{/* NAVIGATION */}
 
 <NavigationButtons
 prev="/working-capital"
@@ -197,7 +223,7 @@ result.status==="Rejected"
 
 </div>
 
-{/* INPUT SECTION */}
+{/* INPUT */}
 
 <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800">
 
@@ -265,6 +291,128 @@ Agriculture Result
 
 )}
 
+{/* RISK INDICATOR */}
+
+{result &&(
+
+<div className="bg-slate-900 p-6 rounded-2xl border border-slate-800">
+
+<h3 className="font-semibold mb-4">
+Risk Indicator
+</h3>
+
+<div className={`px-6 py-3 rounded-lg text-lg font-bold inline-block
+${result.risk_grade==="A"?"bg-emerald-500 text-black":""}
+${result.risk_grade==="B"?"bg-yellow-500 text-black":""}
+${result.risk_grade==="C"?"bg-orange-500 text-black":""}
+${result.risk_grade==="D"?"bg-red-500 text-white":""}
+`}>
+
+Risk Grade : {result.risk_grade}
+
+</div>
+
+</div>
+
+)}
+
+{/* FOIR GAUGE */}
+
+{result &&(
+
+<div className="bg-slate-900 p-6 rounded-2xl border border-slate-800">
+
+<h3 className="font-semibold mb-4">
+FOIR Risk Level
+</h3>
+
+<div className="w-full bg-slate-700 h-4 rounded-full">
+
+<div
+className={`h-4 rounded-full
+${result.foir_percent<30?"bg-emerald-500":""}
+${result.foir_percent>=30 && result.foir_percent<50?"bg-yellow-500":""}
+${result.foir_percent>=50?"bg-red-500":""}
+`}
+style={{width:`${result.foir_percent}%`}}
+/>
+
+</div>
+
+<p className="text-sm mt-2">
+FOIR : {result.foir_percent}%
+</p>
+
+</div>
+
+)}
+
+{/* CHARTS */}
+
+{result &&(
+
+<div className="grid md:grid-cols-2 gap-6">
+
+<div className="bg-slate-900 p-6 rounded-2xl border border-slate-800">
+
+<h3 className="font-semibold mb-4">
+Income Split
+</h3>
+
+<ResponsiveContainer width="100%" height={250}>
+
+<PieChart>
+
+<Pie
+data={incomePie}
+dataKey="value"
+outerRadius={90}
+>
+
+{COLORS.map((c,i)=>(
+<Cell key={i} fill={c}/>
+))}
+
+</Pie>
+
+<Tooltip/>
+
+</PieChart>
+
+</ResponsiveContainer>
+
+</div>
+
+<div className="bg-slate-900 p-6 rounded-2xl border border-slate-800">
+
+<h3 className="font-semibold mb-4">
+Loan Eligibility
+</h3>
+
+<ResponsiveContainer width="100%" height={250}>
+
+<BarChart data={loanChart}>
+
+<CartesianGrid strokeDasharray="3 3"/>
+
+<XAxis dataKey="name"/>
+
+<YAxis/>
+
+<Tooltip/>
+
+<Bar dataKey="value" fill="#3b82f6"/>
+
+</BarChart>
+
+</ResponsiveContainer>
+
+</div>
+
+</div>
+
+)}
+
 </div>
 
 <ExportCAM/>
@@ -275,7 +423,8 @@ Agriculture Result
 
 }
 
-/* INPUT COMPONENT */
+
+/* INPUT */
 
 function Input({label,name,value,onChange}){
 
