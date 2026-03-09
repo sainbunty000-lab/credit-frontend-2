@@ -102,9 +102,9 @@ export default function Banking() {
       {/* NAVIGATION */}
 
       <NavigationButtons
-        prev="/agriculture"
-        next="/final"
-      />
+prev="/agriculture"
+next="/final-report"
+/>
 
       <LOSProgress />
 
