@@ -1,388 +1,420 @@
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
-import { useEffect, useState } from "react";
-import { v4 as uuidv4 } from "uuid";
+import { useState, useEffect } from "react";
+import {
+UploadCloud,
+Calculator,
+BarChart3,
+TrendingUp,
+FileText,
+Eye,
+EyeOff
+} from "lucide-react";
 
 import {
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-  ResponsiveContainer,
-  Legend
+BarChart,
+Bar,
+XAxis,
+YAxis,
+Tooltip,
+ResponsiveContainer,
+CartesianGrid,
+Cell
 } from "recharts";
 
+import NavigationButtons from "../components/NavigationButtons";
+
+const API = "https://credit-backend-production-d988.up.railway.app";
 const STORAGE_KEY = "credit_app_v1";
 
-export default function FinalReport(){
+export default function WorkingCapital(){
 
-  const [data,setData] = useState(null);
-  const [report,setReport] = useState(null);
+const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
 
-  useEffect(()=>{
+const [balanceSheet,setBalanceSheet] = useState(null);
+const [profitLoss,setProfitLoss] = useState(null);
 
-    const stored =
-      JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+const [loading,setLoading] = useState(false);
+const [showResults,setShowResults] = useState(true);
 
-    const wc = stored.workingCapital?.result || null;
-    const agri = stored.agriculture?.result || null;
-    const banking = stored.banking?.result || null;
+const [form,setForm] = useState(
+stored?.workingCapital?.form || {
+current_assets:"",
+current_liabilities:"",
+inventory:"",
+receivables:"",
+annual_sales:"",
+cogs:""
+}
+);
 
-    const wcScore = wc?.liquidity_score ?? null;
-    const agriScore = agri?.risk_score ?? null;
-    const bankingScore = banking?.risk_summary?.hygiene_score ?? null;
+const [result,setResult] = useState(
+stored?.workingCapital?.result || null
+);
 
-    /* CREDIT SCORE ENGINE */
 
-    let score = 0;
-    let weight = 0;
+/* FORMAT INR */
 
-    if(wcScore !== null){
-      score += wcScore * 0.4;
-      weight += 0.4;
-    }
+const formatINR = (val)=>
+new Intl.NumberFormat("en-IN",{
+style:"currency",
+currency:"INR",
+maximumFractionDigits:0
+}).format(Math.round(val || 0));
 
-    if(agriScore !== null){
-      score += agriScore * 0.3;
-      weight += 0.3;
-    }
 
-    if(bankingScore !== null){
-      score += bankingScore * 0.3;
-      weight += 0.3;
-    }
+/* SAVE STATE */
 
-    if(weight>0) score = score / weight;
+useEffect(()=>{
 
-    let decision="DECLINED";
+const existing =
+JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
 
-    if(score>=80) decision="APPROVED";
-    else if(score>=65) decision="CONDITIONAL APPROVAL";
+localStorage.setItem(
+STORAGE_KEY,
+JSON.stringify({
+...existing,
+workingCapital:{form,result}
+})
+);
 
-    const recommendedLimit = Math.max(
-      wc?.drawing_power || 0,
-      agri?.eligible_loan_amount || 0
-    );
+},[form,result]);
 
-    setReport({
-      id:uuidv4(),
-      score,
-      decision,
-      recommendedLimit
-    });
 
-    setData({wc,agri,banking});
+/* FILE EXTRACTION */
 
-  },[]);
+const extractFiles = async ()=>{
 
-  if(!report || !data) return null;
+if(!balanceSheet || !profitLoss){
 
-  const COLORS = ["#10b981","#3b82f6"];
+alert("Upload Balance Sheet and Profit & Loss");
 
-  /* MULTI PAGE PDF EXPORT */
-
-  const exportPDF = async()=>{
-
-    const element =
-      document.getElementById("cam-report");
-
-    const canvas =
-      await html2canvas(element,{scale:2});
-
-    const imgData =
-      canvas.toDataURL("image/png");
-
-    const pdf =
-      new jsPDF("p","mm","a4");
-
-    const imgWidth = 210;
-    const pageHeight = 295;
-
-    const imgHeight =
-      (canvas.height * imgWidth) / canvas.width;
-
-    let heightLeft = imgHeight;
-    let position = 0;
-
-    pdf.addImage(imgData,"PNG",0,position,imgWidth,imgHeight);
-    heightLeft -= pageHeight;
-
-    while(heightLeft >= 0){
-
-      position = heightLeft - imgHeight;
-
-      pdf.addPage();
-
-      pdf.addImage(
-        imgData,
-        "PNG",
-        0,
-        position,
-        imgWidth,
-        imgHeight
-      );
-
-      heightLeft -= pageHeight;
-
-    }
-
-    pdf.save("CAM_Report.pdf");
-
-  };
-
-  return(
-
-  <div className="space-y-10 p-4 sm:p-6 pt-20 pb-32">
-
-  <div
-    id="cam-report"
-    className="bg-slate-900 p-6 sm:p-8 rounded-xl border border-slate-800 space-y-10"
-  >
-
-  <h2 className="text-xl font-bold text-emerald-400">
-    Credit Assessment Memorandum
-  </h2>
-
-  {/* SCORE */}
-
-  <div className="bg-slate-800 p-6 rounded-lg">
-
-    <p className="text-slate-400 text-sm">
-      Final Credit Score
-    </p>
-
-    <h2 className="text-4xl font-bold text-white">
-      {report.score.toFixed(1)}
-    </h2>
-
-    <Decision decision={report.decision}/>
-
-  </div>
-
-
-  {/* WORKING CAPITAL */}
-
-  {data.wc && (
-
-  <Section title="Working Capital Analysis">
-
-  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-
-  <Metric
-    label="Current Ratio"
-    value={data.wc.current_ratio}
-  />
-
-  <Metric
-    label="WC Turnover"
-    value={data.wc.wc_turnover}
-  />
-
-  <Metric
-    label="Drawing Power"
-    value={`₹ ${data.wc.drawing_power?.toLocaleString()}`}
-  />
-
-  </div>
-
-  <ChartCard>
-
-  <ResponsiveContainer width="100%" height={260}>
-
-  <BarChart data={[
-    {name:"Assets",value:data.wc.current_assets||0},
-    {name:"Liabilities",value:data.wc.current_liabilities||0},
-    {name:"NWC",value:data.wc.nwc||0}
-  ]}>
-
-  <CartesianGrid strokeDasharray="3 3"/>
-  <XAxis dataKey="name"/>
-  <YAxis/>
-  <Tooltip/>
-  <Legend/>
-
-  <Bar dataKey="value" fill="#3b82f6"/>
-
-  </BarChart>
-
-  </ResponsiveContainer>
-
-  </ChartCard>
-
-  </Section>
-
-  )}
-
-
-  {/* AGRICULTURE */}
-
-  {data.agri && (
-
-  <Section title="Agriculture Analysis">
-
-  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-
-  <Metric
-    label="Disposable Income"
-    value={`₹ ${data.agri.disposable_income?.toLocaleString()}`}
-  />
-
-  <Metric
-    label="FOIR %"
-    value={`${data.agri.foir_percent}%`}
-  />
-
-  <Metric
-    label="Eligible Loan"
-    value={`₹ ${data.agri.eligible_loan_amount?.toLocaleString()}`}
-  />
-
-  </div>
-
-  <ChartCard>
-
-  <ResponsiveContainer width="100%" height={260}>
-
-  <PieChart>
-
-  <Pie
-    data={[
-      {
-        name:"Documented",
-        value:data.agri.chart_data?.income_split?.documented||0
-      },
-      {
-        name:"Undocumented",
-        value:data.agri.chart_data?.income_split?.undocumented||0
-      }
-    ]}
-    dataKey="value"
-    outerRadius={100}
-  >
-
-  {COLORS.map((c,i)=>(
-    <Cell key={i} fill={c}/>
-  ))}
-
-  </Pie>
-
-  <Tooltip/>
-
-  </PieChart>
-
-  </ResponsiveContainer>
-
-  </ChartCard>
-
-  </Section>
-
-  )}
-
-
-  {/* BANKING */}
-
-  {data.banking && (
-
-  <Section title="Banking Behaviour">
-
-  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-
-  <Metric
-    label="Total Credit"
-    value={`₹ ${data.banking.statement_summary?.total_credit?.toLocaleString()}`}
-  />
-
-  <Metric
-    label="Total Debit"
-    value={`₹ ${data.banking.statement_summary?.total_debit?.toLocaleString()}`}
-  />
-
-  <Metric
-    label="Bounce Count"
-    value={data.banking.behavior_analysis?.bounce_count||0}
-  />
-
-  </div>
-
-  <ChartCard>
-
-  <ResponsiveContainer width="100%" height={260}>
-
-  <BarChart
-    data={data.banking.chart_data?.monthly_trend||[]}
-  >
-
-  <CartesianGrid strokeDasharray="3 3"/>
-  <XAxis dataKey="month"/>
-  <YAxis/>
-  <Tooltip/>
-  <Legend/>
-
-  <Bar dataKey="credit" fill="#3b82f6"/>
-  <Bar dataKey="debit" fill="#ef4444"/>
-
-  </BarChart>
-
-  </ResponsiveContainer>
-
-  </ChartCard>
-
-  </Section>
-
-  )}
-
-  {/* LIMIT */}
-
-  <div className="bg-slate-800 p-6 rounded-lg">
-
-  <p className="text-slate-400 text-sm">
-  Recommended Credit Limit
-  </p>
-
-  <h2 className="text-3xl font-bold text-emerald-400">
-  ₹ {report.recommendedLimit.toLocaleString()}
-  </h2>
-
-  </div>
-
-  </div>
-
-  {/* EXPORT BUTTON */}
-
-  <button
-    onClick={exportPDF}
-    className="bg-emerald-500 px-6 py-3 rounded-md text-black font-semibold"
-  >
-    Export CAM Report PDF
-  </button>
-
-  </div>
-
-  );
+return;
 
 }
 
+try{
 
-/* COMPONENTS */
+setLoading(true);
 
-function Metric({label,value}){
+const fd = new FormData();
+
+fd.append("balance_sheet",balanceSheet);
+fd.append("profit_loss",profitLoss);
+
+const res = await fetch(`${API}/wc/upload-dual`,{
+method:"POST",
+body:fd
+});
+
+const data = await res.json();
+
+if(data?.extracted_values){
+
+setForm(prev=>({
+...prev,
+...data.extracted_values
+}));
+
+}
+
+if(data?.calculations){
+
+setResult(data.calculations);
+
+}
+
+setShowResults(true);
+
+}catch(err){
+
+console.error(err);
+alert("Extraction failed");
+
+}finally{
+
+setLoading(false);
+
+}
+
+};
+
+
+/* WC MODEL */
+
+const calculate = ()=>{
+
+const ca = Number(form.current_assets || 0);
+const cl = Number(form.current_liabilities || 0);
+const sales = Number(form.annual_sales || 0);
+
+const nwc = ca - cl;
+
+const current_ratio = cl ? ca/cl : 0;
+
+const wc_turnover = nwc ? sales/nwc : 0;
+
+const mpbf_limit = sales * 0.25;
+
+const turnover_limit = sales * 0.20;
+
+const drawing_power = nwc>0 ? nwc*0.75 : 0;
+
+/* RISK SCORE */
+
+let score = 0;
+
+score += current_ratio>1.5 ? 30 : 15;
+score += wc_turnover>3 ? 30 : 15;
+score += drawing_power>0 ? 40 : 20;
+
+setResult({
+nwc,
+current_ratio:Number(current_ratio.toFixed(2)),
+wc_turnover:Number(wc_turnover.toFixed(2)),
+mpbf_limit,
+turnover_limit,
+drawing_power,
+liquidity_score:score
+});
+
+setShowResults(true);
+
+};
+
+
+const updateField = (key,value)=>{
+
+setForm(prev=>({
+...prev,
+[key]:value
+}));
+
+};
+
 
 return(
 
-<div className="bg-slate-800 p-4 rounded-lg">
+<div className="min-h-screen bg-[#070b14] p-4 sm:p-6 pt-20 pb-32 text-slate-200">
 
-<p className="text-xs text-slate-400">
-{label}
+<NavigationButtons prev="/" next="/agriculture"/>
+
+
+{/* HEADER */}
+
+<div className="flex justify-between items-center mb-8 max-w-7xl mx-auto">
+
+<div className="flex items-center gap-4">
+
+<BarChart3 className="text-blue-500 w-8 h-8"/>
+
+<div>
+
+<h2 className="text-2xl sm:text-3xl font-extrabold text-white">
+Working Capital Analysis
+</h2>
+
+<p className="text-slate-500 text-sm">
+Financial Liquidity & MPBF Model
 </p>
 
-<h3 className="text-lg font-bold text-white mt-1">
-{value}
+</div>
+
+</div>
+
+{result &&(
+
+<button
+onClick={()=>setShowResults(!showResults)}
+className="flex items-center gap-2 bg-slate-800 px-4 py-2 rounded-xl"
+>
+
+{showResults ? <EyeOff size={18}/> : <Eye size={18}/>}
+
+{showResults ? "Hide Analysis":"Show Analysis"}
+
+</button>
+
+)}
+
+</div>
+
+
+{/* FILE UPLOAD */}
+
+<div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+
+<UploadCard
+label="Balance Sheet"
+icon={<FileText size={20}/>}
+onChange={(e)=>setBalanceSheet(e.target.files[0])}
+/>
+
+<UploadCard
+label="Profit & Loss"
+icon={<TrendingUp size={20}/>}
+onChange={(e)=>setProfitLoss(e.target.files[0])}
+/>
+
+<button
+onClick={extractFiles}
+disabled={loading}
+className="bg-blue-600 hover:bg-blue-500 text-white py-4 rounded-2xl flex items-center justify-center gap-2"
+>
+
+<UploadCloud size={20}/>
+
+{loading?"Processing...":"Extract Data"}
+
+</button>
+
+</div>
+
+
+{/* INPUTS */}
+
+<div className="max-w-7xl mx-auto mt-8 bg-[#0f172a]/40 p-6 sm:p-8 rounded-3xl border border-slate-800">
+
+<h3 className="text-white font-semibold mb-6">
+Financial Inputs
 </h3>
+
+<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+
+<InputField label="Current Assets" value={form.current_assets} onChange={(v)=>updateField("current_assets",v)}/>
+<InputField label="Current Liabilities" value={form.current_liabilities} onChange={(v)=>updateField("current_liabilities",v)}/>
+<InputField label="Inventory" value={form.inventory} onChange={(v)=>updateField("inventory",v)}/>
+<InputField label="Receivables" value={form.receivables} onChange={(v)=>updateField("receivables",v)}/>
+<InputField label="Annual Sales" value={form.annual_sales} onChange={(v)=>updateField("annual_sales",v)}/>
+<InputField label="COGS" value={form.cogs} onChange={(v)=>updateField("cogs",v)}/>
+
+</div>
+
+<div className="mt-8">
+
+<button
+onClick={calculate}
+className="bg-white text-slate-900 px-8 py-3 rounded-xl flex items-center gap-2 font-bold"
+>
+
+<Calculator size={18}/>
+Run Financial Model
+
+</button>
+
+</div>
+
+</div>
+
+
+{/* RESULTS */}
+
+{result && showResults &&(
+
+<div className="max-w-7xl mx-auto mt-8 space-y-8">
+
+
+{/* KPI */}
+
+<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+<MetricCard title="Net Working Capital" value={formatINR(result.nwc)}/>
+<MetricCard title="Current Ratio" value={result.current_ratio}/>
+<MetricCard title="WC Turnover" value={result.wc_turnover}/>
+<MetricCard title="Drawing Power" value={formatINR(result.drawing_power)}/>
+
+</div>
+
+
+{/* RISK SCORE */}
+
+<div className="bg-[#0f172a] p-6 rounded-3xl border border-slate-800">
+
+<h3 className="text-white font-semibold mb-3">
+Liquidity Risk Score
+</h3>
+
+<h2 className="text-3xl font-bold text-emerald-400">
+{result.liquidity_score}
+</h2>
+
+</div>
+
+
+{/* CHART */}
+
+<div className="bg-[#0f172a] p-6 rounded-3xl border border-slate-800">
+
+<h3 className="text-white text-sm font-bold mb-6 flex items-center gap-2">
+
+<BarChart3 size={18}/>
+
+Asset Composition
+
+</h3>
+
+<ResponsiveContainer width="100%" height={320}>
+
+<BarChart
+data={[
+{name:"Assets",value:Number(form.current_assets||0)},
+{name:"Liabilities",value:Number(form.current_liabilities||0)},
+{name:"NWC",value:result.nwc}
+]}
+>
+
+<CartesianGrid strokeDasharray="3 3"/>
+
+<XAxis dataKey="name"/>
+
+<YAxis/>
+
+<Tooltip/>
+
+<Bar dataKey="value">
+
+<Cell fill="#3b82f6"/>
+<Cell fill="#ef4444"/>
+<Cell fill="#10b981"/>
+
+</Bar>
+
+</BarChart>
+
+</ResponsiveContainer>
+
+</div>
+
+
+{/* CALCULATION LOGIC */}
+
+<div className="bg-[#0f172a] p-6 rounded-3xl border border-slate-800">
+
+<h3 className="text-white font-semibold mb-4">
+Working Capital Model Logic
+</h3>
+
+<ul className="text-sm text-slate-300 space-y-2">
+
+<li>NWC = Current Assets − Current Liabilities</li>
+
+<li>Current Ratio = Current Assets ÷ Current Liabilities</li>
+
+<li>WC Turnover = Annual Sales ÷ Net Working Capital</li>
+
+<li>MPBF Limit = 25% of Annual Sales</li>
+
+<li>Turnover Method Limit = 20% of Annual Sales</li>
+
+<li>Drawing Power = Net Working Capital × 75%</li>
+
+<li>Liquidity Score based on Ratio, Turnover and Drawing Power</li>
+
+</ul>
+
+</div>
+
+</div>
+
+)}
 
 </div>
 
@@ -390,32 +422,57 @@ return(
 
 }
 
-function Decision({decision}){
 
-let color="bg-red-500";
+/* INPUT FIELD */
 
-if(decision==="APPROVED") color="bg-emerald-500";
-if(decision==="CONDITIONAL APPROVAL") color="bg-yellow-500";
+function InputField({label,value,onChange}){
 
 return(
-<span className={`${color} px-4 py-2 rounded-md text-black font-semibold mt-3 inline-block`}>
-{decision}
+
+<div>
+
+<label className="text-xs text-slate-500 uppercase">
+{label}
+</label>
+
+<input
+type="number"
+value={value || ""}
+onChange={(e)=>onChange(e.target.value)}
+className="w-full bg-[#070b14] text-white px-3 py-3 rounded-xl border border-slate-800 mt-1"
+/>
+
+</div>
+
+);
+
+}
+
+
+/* UPLOAD CARD */
+
+function UploadCard({label,icon,onChange}){
+
+return(
+
+<div className="bg-[#0f172a] p-6 rounded-2xl border border-slate-800">
+
+<div className="flex items-center gap-2 mb-3 text-slate-400">
+
+{icon}
+
+<span className="text-sm font-semibold">
+{label}
 </span>
-);
 
-}
+</div>
 
-function Section({title,children}){
-
-return(
-
-<div className="space-y-6">
-
-<h3 className="text-lg font-semibold text-emerald-400">
-{title}
-</h3>
-
-{children}
+<input
+type="file"
+accept=".pdf,.jpg,.jpeg,.png,.xlsx,.xls,.csv"
+onChange={onChange}
+className="w-full text-xs text-slate-400"
+/>
 
 </div>
 
@@ -423,12 +480,23 @@ return(
 
 }
 
-function ChartCard({children}){
+
+/* METRIC CARD */
+
+function MetricCard({title,value}){
 
 return(
 
-<div className="bg-slate-800 p-6 rounded-lg border border-slate-700">
-{children}
+<div className="bg-[#0f172a] p-5 rounded-xl border border-slate-800">
+
+<p className="text-slate-400 text-sm">
+{title}
+</p>
+
+<h2 className="text-xl font-bold mt-2 text-white">
+{value}
+</h2>
+
 </div>
 
 );
