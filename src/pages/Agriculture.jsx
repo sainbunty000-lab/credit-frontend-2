@@ -47,12 +47,28 @@ export default function Agriculture() {
 
   useEffect(() => {
 
-    const stored =
-      JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+    try {
 
-    if (stored.agriculture) {
-      setForm(stored.agriculture.form || {});
-      setResult(stored.agriculture.result || null);
+      const stored =
+        JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+
+      if (stored.agriculture) {
+
+        setForm(
+          stored.agriculture.form || {
+            documented_income: "",
+            tax: "",
+            undocumented_income_monthly: "",
+            emi_monthly: ""
+          }
+        );
+
+        setResult(stored.agriculture.result || null);
+
+      }
+
+    } catch {
+      console.log("Local storage load failed");
     }
 
   }, []);
@@ -61,16 +77,22 @@ export default function Agriculture() {
 
   useEffect(() => {
 
-    const existing =
-      JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+    try {
 
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({
-        ...existing,
-        agriculture: { form, result }
-      })
-    );
+      const existing =
+        JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          ...existing,
+          agriculture: { form, result }
+        })
+      );
+
+    } catch {
+      console.log("Local storage save failed");
+    }
 
   }, [form, result]);
 
@@ -102,21 +124,21 @@ export default function Agriculture() {
     try {
 
       const response = await agriCalculate({
-        documented_income: Number(form.documented_income),
-        tax: Number(form.tax),
-        undocumented_income_monthly: Number(form.undocumented_income_monthly),
-        emi_monthly: Number(form.emi_monthly)
+        documented_income: Number(form.documented_income || 0),
+        tax: Number(form.tax || 0),
+        undocumented_income_monthly: Number(form.undocumented_income_monthly || 0),
+        emi_monthly: Number(form.emi_monthly || 0)
       });
 
       const data = response?.data || response || {};
 
-      const disposableIncome = data.disposable_income || 0;
+      const disposableIncome = Number(data.disposable_income || 0);
 
       const emi = Number(form.emi_monthly || 0);
 
       const foirPercent =
-        disposableIncome
-          ? ((emi / disposableIncome) * 100).toFixed(2)
+        disposableIncome > 0
+          ? Number(((emi / disposableIncome) * 100).toFixed(2))
           : 0;
 
       data.foir_percent = foirPercent;
@@ -140,16 +162,9 @@ export default function Agriculture() {
 
     <div className="min-h-screen bg-[#070b14] p-4 sm:p-6 text-white">
 
-      {/* NAVIGATION */}
-
-      <NavigationButtons
-        prev="/"
-        next="/banking"
-      />
+      <NavigationButtons prev="/" next="/banking" />
 
       <LOSProgress />
-
-      {/* MAIN CONTAINER */}
 
       <div className="bg-slate-950 p-4 sm:p-6 rounded-3xl border border-slate-800 space-y-8">
 
@@ -167,7 +182,6 @@ export default function Agriculture() {
               <h2 className="text-2xl font-bold">
                 Agriculture Credit Intelligence
               </h2>
-
               <p className="text-slate-500 text-xs uppercase tracking-widest">
                 Dual Model Underwriting
               </p>
@@ -203,10 +217,10 @@ export default function Agriculture() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 
-            <AgriInput label="Documented Annual" name="documented_income" value={form.documented_income} onChange={handleChange} icon={<FileText size={16}/>}/>
-            <AgriInput label="Taxes Paid" name="tax" value={form.tax} onChange={handleChange} icon={<ShieldAlert size={16}/>}/>
-            <AgriInput label="Monthly Informal" name="undocumented_income_monthly" value={form.undocumented_income_monthly} onChange={handleChange} icon={<TrendingUp size={16}/>}/>
-            <AgriInput label="Current EMI" name="emi_monthly" value={form.emi_monthly} onChange={handleChange} icon={<Calculator size={16}/>}/>
+            <AgriInput label="Documented Annual" name="documented_income" value={form.documented_income} onChange={handleChange}/>
+            <AgriInput label="Taxes Paid" name="tax" value={form.tax} onChange={handleChange}/>
+            <AgriInput label="Monthly Informal" name="undocumented_income_monthly" value={form.undocumented_income_monthly} onChange={handleChange}/>
+            <AgriInput label="Current EMI" name="emi_monthly" value={form.emi_monthly} onChange={handleChange}/>
 
           </div>
 
@@ -226,59 +240,21 @@ export default function Agriculture() {
           </div>
         )}
 
-        {/* RESULTS */}
+        {/* RESULT */}
 
         {result && (
 
-          <div className="space-y-8">
+          <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800">
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+            <p className="text-sm text-slate-400">Total Income</p>
+            <p className="text-xl font-bold">
+              {formatINR(result.total_adjusted_income)}
+            </p>
 
-              <MetricCard title="Total Income" value={formatINR(result.total_adjusted_income)}/>
-              <MetricCard title="Disposable" value={formatINR(result.disposable_income)}/>
-              <MetricCard title="EMI Model" value={formatINR(result.eligible_loan_emi_model)}/>
-              <MetricCard title="Policy Model" value={formatINR(result.eligible_loan_policy_model)}/>
-              <MetricCard title="Final Eligible" value={formatINR(result.eligible_loan_amount)} highlight/>
-              <MetricCard title="Risk Grade" value={result.risk_grade} grade={result.risk_grade}/>
-
-            </div>
-
-            {/* FOIR */}
-
-            <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800">
-
-              <div className="flex justify-between mb-3">
-
-                <h4 className="text-xs uppercase text-slate-400">
-                  FOIR Analysis
-                </h4>
-
-                <span className={`text-2xl font-bold ${result.foir_percent > 60 ? "text-red-500" : "text-emerald-500"}`}>
-                  {result.foir_percent}%
-                </span>
-
-              </div>
-
-              <div className="w-full bg-slate-800 rounded-full h-3">
-
-                <div
-                  className={`${result.foir_percent > 60 ? "bg-red-500" : "bg-emerald-500"} h-full`}
-                  style={{ width: `${Math.min(result.foir_percent || 0, 100)}%` }}
-                />
-
-              </div>
-
-            </div>
-
-            {/* CHARTS */}
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-              <ChartIncomeSplit result={result}/>
-              <ChartLoanModels result={result}/>
-              <ChartStress result={result} form={form}/>
-
-            </div>
+            <p className="text-sm text-slate-400 mt-4">Eligible Loan</p>
+            <p className="text-2xl font-bold text-emerald-400">
+              {formatINR(result.eligible_loan_amount)}
+            </p>
 
           </div>
 
@@ -286,12 +262,34 @@ export default function Agriculture() {
 
       </div>
 
-      {/* EXPORT CAM */}
-
       <ExportCAM />
 
     </div>
 
   );
+
+}
+
+/* SIMPLE INPUT */
+
+function AgriInput({ label, name, value, onChange }){
+
+  return(
+
+    <div>
+
+      <p className="text-xs text-slate-400 mb-1">{label}</p>
+
+      <input
+        type="number"
+        name={name}
+        value={value}
+        onChange={onChange}
+        className="w-full bg-slate-800 border border-slate-700 p-2 rounded-lg"
+      />
+
+    </div>
+
+  )
 
 }
