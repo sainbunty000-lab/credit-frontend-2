@@ -37,7 +37,6 @@ const wcScore = wc?.liquidity_score ?? wc?.risk?.risk_score ?? null;
 const agriScore = agri?.risk_score ?? null;
 const bankingScore = banking?.risk_summary?.hygiene_score ?? null;
 
-
 /* CREDIT SCORE ENGINE */
 
 let score = 0;
@@ -65,14 +64,10 @@ let decision="DECLINED";
 if(score>=80) decision="APPROVED";
 else if(score>=65) decision="CONDITIONAL APPROVAL";
 
-
-/* CREDIT LIMIT */
-
 const recommendedLimit = Math.max(
 wc?.mpbf_analysis?.recommended_limit || wc?.ratios?.drawing_power || 0,
 agri?.eligible_loan_amount || 0
 );
-
 
 setReport({
 id:uuidv4(),
@@ -181,20 +176,9 @@ Final Credit Score
 
 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-<Metric
-label="Current Ratio"
-value={data.wc?.ratios?.current_ratio}
-/>
-
-<Metric
-label="WC Turnover"
-value={data.wc?.ratios?.wc_turnover}
-/>
-
-<Metric
-label="Drawing Power"
-value={`₹ ${data.wc?.ratios?.drawing_power?.toLocaleString()}`}
-/>
+<Metric label="Current Ratio" value={data.wc?.ratios?.current_ratio}/>
+<Metric label="WC Turnover" value={data.wc?.ratios?.wc_turnover}/>
+<Metric label="Drawing Power" value={`₹ ${data.wc?.ratios?.drawing_power?.toLocaleString()}`}/>
 
 </div>
 
@@ -203,7 +187,7 @@ value={`₹ ${data.wc?.ratios?.drawing_power?.toLocaleString()}`}
 <ResponsiveContainer width="100%" height={260}>
 
 <BarChart data={[
-{name:"Assets",value:data.wc?.ratios?.nwc || 0},
+{name:"NWC",value:data.wc?.ratios?.nwc || 0},
 {name:"MPBF",value:data.wc?.mpbf_analysis?.mpbf || 0},
 {name:"Limit",value:data.wc?.mpbf_analysis?.recommended_limit || 0}
 ]}>
@@ -222,6 +206,41 @@ value={`₹ ${data.wc?.ratios?.drawing_power?.toLocaleString()}`}
 
 </ChartCard>
 
+
+{/* MATHEMATICAL LOGIC */}
+
+<div className="bg-slate-800 p-6 rounded-lg">
+
+<h4 className="font-semibold text-emerald-400 mb-3">
+Working Capital Model Logic
+</h4>
+
+<ul className="text-sm text-slate-300 space-y-1">
+
+<li>NWC = Current Assets − Current Liabilities</li>
+
+<li>Current Ratio = Current Assets ÷ Current Liabilities</li>
+
+<li>Quick Ratio = (Current Assets − Inventory) ÷ Current Liabilities</li>
+
+<li>WC Turnover = Annual Sales ÷ Net Working Capital</li>
+
+<li>Operating Cycle = Inventory Days + Receivable Days</li>
+
+<li>Gap Days = Operating Cycle − Payable Days</li>
+
+<li>MPBF = Working Capital Gap − Margin (25%)</li>
+
+<li>Turnover Limit = 20% of Annual Sales</li>
+
+<li>Recommended Limit = Minimum (MPBF, Turnover Limit)</li>
+
+<li>Drawing Power = 75% Debtors + 50% Stock − Bank Exposure</li>
+
+</ul>
+
+</div>
+
 </Section>
 
 )}
@@ -235,20 +254,9 @@ value={`₹ ${data.wc?.ratios?.drawing_power?.toLocaleString()}`}
 
 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-<Metric
-label="Disposable Income"
-value={`₹ ${data.agri?.disposable_income?.toLocaleString()}`}
-/>
-
-<Metric
-label="FOIR %"
-value={`${data.agri?.foir_percent}%`}
-/>
-
-<Metric
-label="Eligible Loan"
-value={`₹ ${data.agri?.eligible_loan_amount?.toLocaleString()}`}
-/>
+<Metric label="Disposable Income" value={`₹ ${data.agri?.disposable_income?.toLocaleString()}`}/>
+<Metric label="FOIR %" value={`${data.agri?.foir_percent}%`}/>
+<Metric label="Eligible Loan" value={`₹ ${data.agri?.eligible_loan_amount?.toLocaleString()}`}/>
 
 </div>
 
@@ -260,14 +268,8 @@ value={`₹ ${data.agri?.eligible_loan_amount?.toLocaleString()}`}
 
 <Pie
 data={[
-{
-name:"Documented",
-value:data.agri?.chart_data?.income_split?.documented||0
-},
-{
-name:"Undocumented",
-value:data.agri?.chart_data?.income_split?.undocumented||0
-}
+{name:"Documented",value:data.agri?.chart_data?.income_split?.documented||0},
+{name:"Undocumented",value:data.agri?.chart_data?.income_split?.undocumented||0}
 ]}
 dataKey="value"
 outerRadius={100}
@@ -300,52 +302,18 @@ outerRadius={100}
 
 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-<Metric
-label="Total Credit"
-value={`₹ ${data.banking?.statement_summary?.total_credit?.toLocaleString()}`}
-/>
-
-<Metric
-label="Total Debit"
-value={`₹ ${data.banking?.statement_summary?.total_debit?.toLocaleString()}`}
-/>
-
-<Metric
-label="Bounce Count"
-value={data.banking?.behavior_analysis?.bounce_count||0}
-/>
+<Metric label="Total Credit" value={`₹ ${data.banking?.statement_summary?.total_credit?.toLocaleString()}`}/>
+<Metric label="Total Debit" value={`₹ ${data.banking?.statement_summary?.total_debit?.toLocaleString()}`}/>
+<Metric label="Bounce Count" value={data.banking?.behavior_analysis?.bounce_count||0}/>
 
 </div>
-
-<ChartCard>
-
-<ResponsiveContainer width="100%" height={260}>
-
-<BarChart
-data={data.banking?.chart_data?.monthly_trend||[]}
->
-
-<CartesianGrid strokeDasharray="3 3"/>
-<XAxis dataKey="month"/>
-<YAxis/>
-<Tooltip/>
-<Legend/>
-
-<Bar dataKey="credit" fill="#3b82f6"/>
-<Bar dataKey="debit" fill="#ef4444"/>
-
-</BarChart>
-
-</ResponsiveContainer>
-
-</ChartCard>
 
 </Section>
 
 )}
 
 
-{/* LIMIT */}
+{/* FINAL LIMIT */}
 
 <div className="bg-slate-800 p-6 rounded-lg">
 
@@ -379,23 +347,12 @@ Export CAM Report PDF
 /* COMPONENTS */
 
 function Metric({label,value}){
-
 return(
-
 <div className="bg-slate-800 p-4 rounded-lg">
-
-<p className="text-xs text-slate-400">
-{label}
-</p>
-
-<h3 className="text-lg font-bold text-white mt-1">
-{value}
-</h3>
-
+<p className="text-xs text-slate-400">{label}</p>
+<h3 className="text-lg font-bold text-white mt-1">{value}</h3>
 </div>
-
 );
-
 }
 
 function Decision({decision}){
@@ -410,35 +367,21 @@ return(
 {decision}
 </span>
 );
-
 }
 
 function Section({title,children}){
-
 return(
-
 <div className="space-y-6">
-
-<h3 className="text-lg font-semibold text-emerald-400">
-{title}
-</h3>
-
+<h3 className="text-lg font-semibold text-emerald-400">{title}</h3>
 {children}
-
 </div>
-
 );
-
 }
 
 function ChartCard({children}){
-
 return(
-
 <div className="bg-slate-800 p-6 rounded-lg border border-slate-700">
 {children}
 </div>
-
 );
-
 }
