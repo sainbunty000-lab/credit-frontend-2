@@ -19,6 +19,8 @@ import {
   Cell
 } from "recharts";
 
+import NavigationButtons from "../components/NavigationButtons";
+
 const API = "https://credit-backend-production-d988.up.railway.app";
 const STORAGE_KEY = "credit_app_v1";
 
@@ -159,20 +161,28 @@ export default function WorkingCapital() {
 
   return (
 
-    <div className="min-h-screen bg-[#070b14] p-6 text-slate-200">
+    <div className="min-h-screen bg-[#070b14] p-4 sm:p-6 text-slate-200">
+
+      {/* NAVIGATION BUTTONS */}
+
+      <NavigationButtons
+        prev="/"
+        next="/agriculture"
+      />
 
       {/* HEADER */}
 
-      <div className="flex justify-between items-center mb-10 max-w-7xl mx-auto">
+      <div className="flex justify-between items-center mb-8 max-w-7xl mx-auto">
 
         <div className="flex items-center gap-4">
 
-          <BarChart3 className="text-blue-500 w-8 h-8" />
+          <BarChart3 className="text-blue-500 w-8 h-8"/>
 
           <div>
-            <h2 className="text-3xl font-extrabold text-white">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-white">
               Working Capital Analysis
             </h2>
+
             <p className="text-slate-500 text-sm">
               Financial liquidity & MPBF assessment
             </p>
@@ -198,7 +208,7 @@ export default function WorkingCapital() {
 
         {/* FILE UPLOAD */}
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 
           <UploadCard
             label="Balance Sheet"
@@ -225,13 +235,13 @@ export default function WorkingCapital() {
 
         {/* INPUTS */}
 
-        <div className="bg-[#0f172a]/40 p-8 rounded-3xl border border-slate-800">
+        <div className="bg-[#0f172a]/40 p-6 sm:p-8 rounded-3xl border border-slate-800">
 
           <h3 className="text-white font-semibold mb-6">
             Verification & Adjustments
           </h3>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 
             <InputField label="Current Assets" value={form.current_assets} onChange={(v)=>updateField("current_assets",v)} />
             <InputField label="Current Liabilities" value={form.current_liabilities} onChange={(v)=>updateField("current_liabilities",v)} />
@@ -246,7 +256,7 @@ export default function WorkingCapital() {
 
             <button
               onClick={calculate}
-              className="bg-white text-slate-900 px-10 py-3 rounded-xl flex items-center gap-2 font-bold"
+              className="bg-white text-slate-900 px-8 py-3 rounded-xl flex items-center gap-2 font-bold"
             >
               <Calculator size={18}/>
               Run Financial Model
@@ -260,9 +270,9 @@ export default function WorkingCapital() {
 
         {result && showResults && (
 
-          <div className="space-y-10">
+          <div className="space-y-8">
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 
               <MetricCard title="NWC" value={formatINR(result.nwc)} />
               <MetricCard title="Current Ratio" value={result.current_ratio} />
@@ -275,7 +285,7 @@ export default function WorkingCapital() {
 
             <Section title="Bank Finance Assessment (MPBF)">
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
 
                 <MetricCard title="Drawing Power" value={formatINR(result.drawing_power)}/>
                 <MetricCard title="MPBF Eligible" value={formatINR(result.mpbf_limit)}/>
@@ -288,14 +298,14 @@ export default function WorkingCapital() {
 
             {/* CHART */}
 
-            <div className="bg-[#0f172a] p-6 rounded-3xl border border-slate-800">
+            <div className="bg-[#0f172a] p-4 sm:p-6 rounded-3xl border border-slate-800 overflow-x-auto">
 
               <h3 className="text-white text-sm font-bold mb-6 flex items-center gap-2">
                 <BarChart3 size={18}/>
                 Asset Composition
               </h3>
 
-              <ResponsiveContainer width="100%" height={280}>
+              <ResponsiveContainer width="100%" height={320}>
 
                 <BarChart
                   data={[
@@ -303,10 +313,11 @@ export default function WorkingCapital() {
                     {name:"Liabilities",value:Number(form.current_liabilities||0)},
                     {name:"NWC",value:result.nwc}
                   ]}
+                  barSize={40}
                 >
 
                   <XAxis dataKey="name"/>
-                  <YAxis hide/>
+                  <YAxis/>
                   <Tooltip/>
 
                   <Bar dataKey="value">
