@@ -1,4 +1,7 @@
 import { useState, useEffect } from "react";
+import NavigationButtons from "../components/NavigationButtons";
+import LOSProgress from "../components/LOSProgress";
+import ExportCAM from "../components/ExportCAM";
 import {
   Leaf,
   Calculator,
@@ -142,6 +145,13 @@ export default function Agriculture() {
   };
 
   return (
+    <NavigationButtons
+  prev="/"
+  next="/banking"
+/>
+
+<LOSProgress />
+    
 
     <div className="bg-slate-950 p-6 rounded-3xl border border-slate-800 space-y-8 text-white min-h-screen">
 
