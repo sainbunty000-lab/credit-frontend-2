@@ -28,7 +28,6 @@ return(
 
 <Route path="/final-report" element={<FinalReport />} />
 
-{/* fallback route */}
 <Route path="*" element={<Home />} />
 
 </Routes>
