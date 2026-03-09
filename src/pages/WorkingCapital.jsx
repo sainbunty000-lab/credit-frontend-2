@@ -81,74 +81,68 @@ workingCapital:{form,result}
 /* ===============================
 FILE EXTRACTION
 ================================ */
+const extractFiles = async () => {
 
-const extractFiles = async ()=>{
-
-if(!balanceSheet || !profitLoss){
-
-alert("Upload Balance Sheet and Profit & Loss");
-
-return;
-
+if (!balanceSheet || !profitLoss) {
+  alert("Upload Balance Sheet and Profit & Loss");
+  return;
 }
 
-try{
+try {
 
-setLoading(true);
+  setLoading(true);
 
-const fd = new FormData();
+  const fd = new FormData();
 
-/* backend expected fields */
+  fd.append("balance_sheet", balanceSheet);
+  fd.append("profit_loss", profitLoss);
 
-fd.append("balance_sheet",balanceSheet);
-fd.append("profit_loss",profitLoss);
+  const res = await fetch(
+    `${API}/wc/upload-dual`,
+    {
+      method: "POST",
+      body: fd
+    }
+  );
 
-const res = await fetch(`${API}/wc/upload-dual`,{
-method:"POST",
-body:fd
-});
+  if (!res.ok) {
+    throw new Error("API request failed");
+  }
 
-if(!res.ok){
+  const data = await res.json();
 
-throw new Error("Server error");
+  console.log("API RESPONSE:", data);
 
-}
+  /* populate form fields */
 
-const data = await res.json();
+  setForm({
+    current_assets: data.current_assets || "",
+    current_liabilities: data.current_liabilities || "",
+    inventory: data.inventory || "",
+    receivables: data.receivables || "",
+    annual_sales: data.bank_credit || "",
+    cogs: data.cogs || ""
+  });
 
-console.log("Extraction Response:",data);
+  /* store calculation result */
 
-if(data?.extracted_values){
+  setResult(data);
 
-setForm(prev=>({
-...prev,
-...data.extracted_values
-}));
+  setShowResults(true);
 
-}
+} catch (err) {
 
-if(data?.calculations){
+  console.error(err);
 
-setResult(data.calculations);
+  alert("Extraction failed");
 
-}
+} finally {
 
-setShowResults(true);
-
-}catch(err){
-
-console.error(err);
-
-alert("Extraction failed. Please check backend API.");
-
-}finally{
-
-setLoading(false);
+  setLoading(false);
 
 }
 
 };
-
 
 /* ===============================
 WORKING CAPITAL MODEL
