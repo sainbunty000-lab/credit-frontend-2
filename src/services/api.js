@@ -1,99 +1,105 @@
-import axios from "axios";
+const API = "https://credit-backend-production-d988.up.railway.app";
 
-/*
-========================================
-API BASE URL
-Uses environment variable in production
-========================================
-*/
-
-const API =
-  import.meta.env.VITE_API_URL ||
-  "https://credit-backend-production-d988.up.railway.app";
-
-/*
-========================================
-WORKING CAPITAL
-Upload Balance Sheet + P&L
-========================================
-*/
-
-export const wcUpload = async (balanceSheet, profitLoss) => {
-
-  const formData = new FormData();
-
-  formData.append("balance_sheet", balanceSheet);
-  formData.append("profit_loss", profitLoss);
-
-  const response = await axios.post(
-    `${API}/wc/upload-dual`,
-    formData,
-    {
-      headers: {
-        "Content-Type": "multipart/form-data"
-      }
-    }
-  );
-
-  return response.data;
-};
-
-
-/*
-========================================
-WORKING CAPITAL MANUAL CALCULATION
-========================================
-*/
-
-export const wcManualCalc = async (data) => {
-
-  const response = await axios.post(
-    `${API}/wc/manual-calc`,
-    data
-  );
-
-  return response.data;
-};
-
-
-/*
-========================================
-AGRICULTURE MODEL
-========================================
-*/
+/* ==============================
+   AGRICULTURE CALCULATION
+============================== */
 
 export const agriCalculate = async (data) => {
 
-  const response = await axios.post(
-    `${API}/agriculture/calculate`,
-    data
-  );
+  try {
 
-  return response.data;
+    const res = await fetch(`${API}/agri`,{
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json"
+      },
+      body:JSON.stringify(data)
+    });
+
+    if(!res.ok){
+      throw new Error("Agriculture API error");
+    }
+
+    const json = await res.json();
+    return json;
+
+  } catch(err){
+
+    console.error("Agri API Error:",err);
+
+    return {
+      status:"Error",
+      message:"Agriculture service unavailable"
+    };
+
+  }
+
 };
 
 
-/*
-========================================
-BANKING STATEMENT ANALYSIS
-========================================
-*/
+/* ==============================
+   BANKING STATEMENT ANALYSIS
+============================== */
 
-export const bankingAnalyze = async (file) => {
+export const bankingAnalyze = async (formData) => {
 
-  const formData = new FormData();
+  try{
 
-  formData.append("file", file);
+    const res = await fetch(`${API}/banking`,{
+      method:"POST",
+      body:formData
+    });
 
-  const response = await axios.post(
-    `${API}/banking/full-analysis`,
-    formData,
-    {
-      headers: {
-        "Content-Type": "multipart/form-data"
-      }
+    if(!res.ok){
+      throw new Error("Banking API error");
     }
-  );
 
-  return response.data;
+    const json = await res.json();
+    return json;
+
+  }catch(err){
+
+    console.error("Banking API Error:",err);
+
+    return {
+      status:"Error",
+      message:"Banking analysis failed"
+    };
+
+  }
+
+};
+
+
+/* ==============================
+   WORKING CAPITAL ANALYSIS
+============================== */
+
+export const wcAnalyze = async (formData) => {
+
+  try{
+
+    const res = await fetch(`${API}/wc`,{
+      method:"POST",
+      body:formData
+    });
+
+    if(!res.ok){
+      throw new Error("Working Capital API error");
+    }
+
+    const json = await res.json();
+    return json;
+
+  }catch(err){
+
+    console.error("WC API Error:",err);
+
+    return {
+      status:"Error",
+      message:"Working Capital analysis failed"
+    };
+
+  }
+
 };
