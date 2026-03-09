@@ -14,7 +14,7 @@ return(
 
 <BrowserRouter>
 
-<div className="pb-16">
+<div className="pb-20">
 
 <Routes>
 
@@ -27,8 +27,6 @@ return(
 <Route path="/banking" element={<Banking />} />
 
 <Route path="/final-report" element={<FinalReport />} />
-
-<Route path="*" element={<Home />} />
 
 </Routes>
 
