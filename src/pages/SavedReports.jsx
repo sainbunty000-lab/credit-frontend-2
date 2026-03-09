@@ -58,8 +58,7 @@ export default function SavedReports(){
 
   <div className="p-6 pt-20 pb-28 text-white min-h-screen bg-slate-950">
 
-  {/* BACK TO HOME BUTTON */}
-
+  {/* Back to Home Button */}
   <NavigationButtons prev="/" backHome />
 
   <h2 className="text-2xl font-bold mb-6">
