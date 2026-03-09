@@ -9,11 +9,8 @@ import FinalReport from "./pages/FinalReport";
 import BottomNav from "./components/BottomNav";
 
 export default function App(){
-  return (
-    <div style={{color:"white", padding:"40px"}}>
-      APP WORKING
-      )
-    </div>
+
+return(
 
 <BrowserRouter>
 
@@ -21,15 +18,15 @@ export default function App(){
 
 <Routes>
 
-<Route path="/" element={<Home />} />
+<Route path="/" element={<Home/>} />
 
-<Route path="/working-capital" element={<WorkingCapital />} />
+<Route path="/working-capital" element={<WorkingCapital/>} />
 
-<Route path="/agriculture" element={<Agriculture />} />
+<Route path="/agriculture" element={<Agriculture/>} />
 
-<Route path="/banking" element={<Banking />} />
+<Route path="/banking" element={<Banking/>} />
 
-<Route path="/final-report" element={<FinalReport />} />
+<Route path="/final-report" element={<FinalReport/>} />
 
 </Routes>
 
