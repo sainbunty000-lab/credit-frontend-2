@@ -1,11 +1,3 @@
-text-slate-400"
-      />
-
-    </div>
-
-  )
-
-}
 import { useState, useEffect } from "react";
 import {
   UploadCloud,
