@@ -6,51 +6,55 @@ const navigate = useNavigate();
 
 return (
 
-<>
+<div className="fixed top-3 left-0 right-0 flex justify-between px-4 z-50">
 
-{/* TOP NAVIGATION */}
-
-<div className="fixed top-4 left-4 right-4 flex justify-between z-50">
-
+{prev && (
 <button
-onClick={() => prev && navigate(prev)}
+onClick={() => navigate(prev)}
 className="bg-slate-800 px-4 py-2 rounded text-white"
 >
 ← Previous
 </button>
+)}
 
+{next && (
 <button
-onClick={() => next && navigate(next)}
+onClick={() => navigate(next)}
 className="bg-emerald-600 px-4 py-2 rounded text-white"
 >
 Next →
 </button>
+)}
 
 </div>
 
+);
+
+}
 
 {/* BOTTOM NAVIGATION */}
 
-<div className="fixed bottom-4 left-4 right-4 flex justify-between z-50">
+import { Link } from "react-router-dom";
+import { Home } from "lucide-react";
 
-<button
-onClick={() => navigate("/") }
-className="bg-slate-700 px-5 py-2 rounded text-white"
->
-LOS Home
-</button>
+export default function BottomNav(){
 
-<button
-onClick={() => navigate("/final-report")}
-className="bg-blue-600 px-5 py-2 rounded text-white"
+return(
+
+<div className="fixed bottom-3 left-0 right-0 flex justify-center z-50">
+
+<Link
+to="/"
+className="flex items-center gap-2 bg-slate-800 px-6 py-2 rounded-lg text-white shadow-lg"
 >
-Export Report
-</button>
+
+<Home size={20}/>
+<span className="text-sm font-medium">WC / Agri Home</span>
+
+</Link>
 
 </div>
 
-</>
-
-);
+)
 
 }
