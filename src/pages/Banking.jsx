@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Upload, BarChart3, ShieldCheck } from "lucide-react";
 
-import { bankingAnalyze } from "../services/api";
+import { bankingAnalyze } from "../../services/api";
 
 import {
   BarChart,
@@ -59,15 +59,23 @@ export default function Banking() {
 
   const handleAnalyze = async () => {
 
-    if (!file) return alert("Upload bank statement");
+    if (!file) {
+      alert("Upload bank statement");
+      return;
+    }
 
     try {
 
       setLoading(true);
 
-      const data = await bankingAnalyze(file);
+      const formData = new FormData();
+      formData.append("file", file);
 
-      setResult(data?.analysis || null);
+      const response = await bankingAnalyze(formData);
+
+      const data = response?.data || response || {};
+
+      setResult(data.analysis || data || null);
 
     } catch {
 
@@ -107,7 +115,7 @@ export default function Banking() {
 
           <input
             type="file"
-            accept="application/pdf"
+            accept=".pdf,.csv,.xlsx"
             onChange={(e)=>setFile(e.target.files[0])}
             className="bg-slate-800 p-3 rounded-xl"
           />
@@ -201,7 +209,6 @@ export default function Banking() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
-
             {/* CREDIT VS DEBIT */}
 
             <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800">
@@ -251,11 +258,11 @@ export default function Banking() {
                     data={[
                       {
                         name:"UPI Spends",
-                        value:result.expense_analysis?.upi_spends || 0
+                        value:Number(result.expense_analysis?.upi_spends || 0)
                       },
                       {
                         name:"Salary Income",
-                        value:result.income_analysis?.salary_income || 0
+                        value:Number(result.income_analysis?.salary_income || 0)
                       }
                     ]}
                     dataKey="value"
@@ -324,7 +331,7 @@ function Metric({title,value}){
       </p>
 
       <h2 className="text-xl font-bold mt-2 text-white">
-        ₹ {value?.toLocaleString() || "0"}
+        ₹ {Number(value || 0).toLocaleString("en-IN")}
       </h2>
 
     </div>
