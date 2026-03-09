@@ -5,7 +5,7 @@ import ExportCAM from "../components/ExportCAM";
 
 import { Upload, BarChart3, ShieldCheck } from "lucide-react";
 
-import { bankingAnalyze } from "../../services/api";
+import { bankingAnalyze } from "../services/api";
 
 import {
   BarChart,
