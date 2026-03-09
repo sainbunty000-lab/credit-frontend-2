@@ -14,8 +14,6 @@ export default function App(){
       APP WORKING
     </div>
   )
-}
-
 
 <BrowserRouter>
 
