@@ -4,11 +4,7 @@ import {
   Calculator,
   BarChart3,
   TrendingUp,
-  ShieldCheck,
-  Wallet,
-  ArrowUpRight,
   FileText,
-  IndianRupee,
   Eye,
   EyeOff
 } from "lucide-react";
@@ -28,7 +24,8 @@ const STORAGE_KEY = "credit_app_v1";
 
 export default function WorkingCapital() {
 
-  const stored = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+  const stored =
+    JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
 
   const [balanceSheet, setBalanceSheet] = useState(null);
   const [profitLoss, setProfitLoss] = useState(null);
@@ -36,7 +33,7 @@ export default function WorkingCapital() {
   const [showResults, setShowResults] = useState(true);
 
   const [form, setForm] = useState(
-    stored.workingCapital?.form || {
+    stored?.workingCapital?.form || {
       current_assets: "",
       current_liabilities: "",
       inventory: "",
@@ -47,7 +44,7 @@ export default function WorkingCapital() {
   );
 
   const [result, setResult] = useState(
-    stored.workingCapital?.result || null
+    stored?.workingCapital?.result || null
   );
 
   const formatINR = (val) =>
@@ -55,32 +52,41 @@ export default function WorkingCapital() {
       style: "currency",
       currency: "INR",
       maximumFractionDigits: 0
-    }).format(val || 0);
+    }).format(Math.round(val || 0));
+
+  /* SAVE STATE */
 
   useEffect(() => {
-    const existing = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+
+    const existing =
+      JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+
     localStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({ ...existing, workingCapital: { form, result } })
+      JSON.stringify({
+        ...existing,
+        workingCapital: { form, result }
+      })
     );
+
   }, [form, result]);
 
-  /* =============================
-     FILE EXTRACTION
-  ============================== */
+  /* FILE EXTRACTION */
 
   const extractFiles = async () => {
 
-    if (!balanceSheet || !profitLoss)
-      return alert("Upload both files");
-
-    const fd = new FormData();
-    fd.append("balance_sheet", balanceSheet);
-    fd.append("profit_loss", profitLoss);
+    if (!balanceSheet || !profitLoss) {
+      alert("Upload both files");
+      return;
+    }
 
     try {
 
       setLoading(true);
+
+      const fd = new FormData();
+      fd.append("balance_sheet", balanceSheet);
+      fd.append("profit_loss", profitLoss);
 
       const res = await fetch(`${API}/wc/upload-dual`, {
         method: "POST",
@@ -89,23 +95,25 @@ export default function WorkingCapital() {
 
       const data = await res.json();
 
-      setLoading(false);
-
       if (data) {
-        setForm(data.extracted_values || data);
+        setForm(data.extracted_values || {});
         setResult(data.calculations || null);
         setShowResults(true);
       }
 
     } catch {
-      setLoading(false);
+
       alert("Server Error");
+
+    } finally {
+
+      setLoading(false);
+
     }
+
   };
 
-  /* =============================
-     CALCULATE
-  ============================== */
+  /* CALCULATE MODEL */
 
   const calculate = () => {
 
@@ -114,6 +122,7 @@ export default function WorkingCapital() {
     const sales = Number(form.annual_sales || 0);
 
     const nwc = ca - cl;
+
     const current_ratio = cl ? ca / cl : 0;
     const wc_turnover = nwc ? sales / nwc : 0;
 
@@ -122,6 +131,7 @@ export default function WorkingCapital() {
     const drawing_power = nwc > 0 ? nwc * 0.75 : 0;
 
     let score = 0;
+
     score += current_ratio > 1.5 ? 30 : 15;
     score += wc_turnover > 3 ? 30 : 15;
     score += drawing_power > 0 ? 40 : 20;
@@ -137,6 +147,14 @@ export default function WorkingCapital() {
     });
 
     setShowResults(true);
+
+  };
+
+  const updateField = (key, value) => {
+    setForm(prev => ({
+      ...prev,
+      [key]: value
+    }));
   };
 
   return (
@@ -168,7 +186,7 @@ export default function WorkingCapital() {
             onClick={() => setShowResults(!showResults)}
             className="flex items-center gap-2 bg-slate-800 px-4 py-2 rounded-xl"
           >
-            {showResults ? <EyeOff size={18} /> : <Eye size={18} />}
+            {showResults ? <EyeOff size={18}/> : <Eye size={18}/>}
             {showResults ? "Hide Analysis" : "Show Analysis"}
           </button>
 
@@ -184,14 +202,14 @@ export default function WorkingCapital() {
 
           <UploadCard
             label="Balance Sheet"
-            icon={<FileText size={20} />}
-            onChange={(e) => setBalanceSheet(e.target.files[0])}
+            icon={<FileText size={20}/>}
+            onChange={(e)=>setBalanceSheet(e.target.files[0])}
           />
 
           <UploadCard
             label="Profit & Loss"
-            icon={<TrendingUp size={20} />}
-            onChange={(e) => setProfitLoss(e.target.files[0])}
+            icon={<TrendingUp size={20}/>}
+            onChange={(e)=>setProfitLoss(e.target.files[0])}
           />
 
           <button
@@ -199,7 +217,7 @@ export default function WorkingCapital() {
             disabled={loading}
             className="bg-blue-600 hover:bg-blue-500 text-white py-4 rounded-2xl flex items-center justify-center gap-2"
           >
-            <UploadCloud size={20} />
+            <UploadCloud size={20}/>
             {loading ? "Processing..." : "Extract Data"}
           </button>
 
@@ -215,12 +233,12 @@ export default function WorkingCapital() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-            <InputField label="Current Assets" value={form.current_assets} onChange={(v)=>setForm({...form,current_assets:v})}/>
-            <InputField label="Current Liabilities" value={form.current_liabilities} onChange={(v)=>setForm({...form,current_liabilities:v})}/>
-            <InputField label="Inventory" value={form.inventory} onChange={(v)=>setForm({...form,inventory:v})}/>
-            <InputField label="Receivables" value={form.receivables} onChange={(v)=>setForm({...form,receivables:v})}/>
-            <InputField label="Annual Sales" value={form.annual_sales} onChange={(v)=>setForm({...form,annual_sales:v})}/>
-            <InputField label="COGS" value={form.cogs} onChange={(v)=>setForm({...form,cogs:v})}/>
+            <InputField label="Current Assets" value={form.current_assets} onChange={(v)=>updateField("current_assets",v)} />
+            <InputField label="Current Liabilities" value={form.current_liabilities} onChange={(v)=>updateField("current_liabilities",v)} />
+            <InputField label="Inventory" value={form.inventory} onChange={(v)=>updateField("inventory",v)} />
+            <InputField label="Receivables" value={form.receivables} onChange={(v)=>updateField("receivables",v)} />
+            <InputField label="Annual Sales" value={form.annual_sales} onChange={(v)=>updateField("annual_sales",v)} />
+            <InputField label="COGS" value={form.cogs} onChange={(v)=>updateField("cogs",v)} />
 
           </div>
 
@@ -243,8 +261,6 @@ export default function WorkingCapital() {
         {result && showResults && (
 
           <div className="space-y-10">
-
-            {/* KPI */}
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
 
@@ -316,6 +332,7 @@ export default function WorkingCapital() {
     </div>
 
   );
+
 }
 
 /* INPUT FIELD */
@@ -332,7 +349,7 @@ function InputField({label,value,onChange}){
 
       <input
         type="number"
-        value={value||""}
+        value={value || ""}
         onChange={(e)=>onChange(e.target.value)}
         className="w-full bg-[#070b14] text-white px-3 py-3 rounded-xl border border-slate-800 mt-1"
       />
