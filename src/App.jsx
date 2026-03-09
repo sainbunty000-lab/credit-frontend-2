@@ -18,15 +18,18 @@ return(
 
 <Routes>
 
-<Route path="/" element={<Home/>} />
+<Route path="/" element={<Home />} />
 
-<Route path="/working-capital" element={<WorkingCapital/>} />
+<Route path="/working-capital" element={<WorkingCapital />} />
 
-<Route path="/agriculture" element={<Agriculture/>} />
+<Route path="/agriculture" element={<Agriculture />} />
 
-<Route path="/banking" element={<Banking/>} />
+<Route path="/banking" element={<Banking />} />
 
-<Route path="/final-report" element={<FinalReport/>} />
+<Route path="/final-report" element={<FinalReport />} />
+
+{/* fallback route */}
+<Route path="*" element={<Home />} />
 
 </Routes>
 
