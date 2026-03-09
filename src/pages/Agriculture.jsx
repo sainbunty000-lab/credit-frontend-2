@@ -9,7 +9,7 @@ import {
   ShieldAlert
 } from "lucide-react";
 
-import { agriCalculate } from "../services/api";
+import { agriCalculate } from "../../services/api";
 
 import {
   PieChart,
@@ -21,8 +21,7 @@ import {
   Bar,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Legend
+  CartesianGrid
 } from "recharts";
 
 const STORAGE_KEY = "credit_app_v1";
@@ -81,8 +80,20 @@ export default function Agriculture() {
       maximumFractionDigits: 0
     }).format(Math.round(val || 0));
 
-  const handleChange = (e) =>
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (e) => {
+
+    const { name, value } = e.target;
+
+    setForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
+
+  };
+
+  /* ===============================
+     AGRICULTURE CALCULATION
+  =============================== */
 
   const handleSubmit = async () => {
 
@@ -98,12 +109,28 @@ export default function Agriculture() {
         emi_monthly: Number(form.emi_monthly)
       });
 
-      const data = response?.data ?? response;
+      const data = response?.data || response || {};
+
+      /* FOIR CALCULATION */
+
+      const disposableIncome =
+        data.disposable_income || 0;
+
+      const emi =
+        Number(form.emi_monthly || 0);
+
+      const foirPercent =
+        disposableIncome
+          ? ((emi / disposableIncome) * 100).toFixed(2)
+          : 0;
+
+      data.foir_percent = foirPercent;
 
       setResult(data);
 
-    } catch {
+    } catch (err) {
 
+      console.error(err);
       setError("Policy Engine Error: Unable to compute agriculture eligibility.");
 
     } finally {
@@ -115,6 +142,7 @@ export default function Agriculture() {
   };
 
   return (
+
     <div className="bg-slate-950 p-6 rounded-3xl border border-slate-800 space-y-8 text-white min-h-screen">
 
       {/* HEADER */}
@@ -124,7 +152,7 @@ export default function Agriculture() {
         <div className="flex items-center gap-4">
 
           <div className="p-3 bg-emerald-500/10 rounded-xl">
-            <Leaf className="text-emerald-500 w-8 h-8" />
+            <Leaf className="text-emerald-500 w-8 h-8"/>
           </div>
 
           <div>
@@ -139,6 +167,7 @@ export default function Agriculture() {
         </div>
 
         {result && (
+
           <div
             className={`px-4 py-2 rounded-xl border font-black text-sm uppercase flex items-center gap-2 ${
               result.status === "Rejected"
@@ -146,12 +175,15 @@ export default function Agriculture() {
                 : "border-emerald-500 text-emerald-500"
             }`}
           >
+
             {result.status === "Rejected"
               ? <XCircle size={16}/>
               : <CheckCircle2 size={16}/>}
 
             {result.status}
+
           </div>
+
         )}
 
       </div>
@@ -162,37 +194,10 @@ export default function Agriculture() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 
-          <AgriInput
-            label="Documented Annual"
-            name="documented_income"
-            value={form.documented_income}
-            onChange={handleChange}
-            icon={<FileText size={16}/>}
-          />
-
-          <AgriInput
-            label="Taxes Paid"
-            name="tax"
-            value={form.tax}
-            onChange={handleChange}
-            icon={<ShieldAlert size={16}/>}
-          />
-
-          <AgriInput
-            label="Monthly Informal"
-            name="undocumented_income_monthly"
-            value={form.undocumented_income_monthly}
-            onChange={handleChange}
-            icon={<TrendingUp size={16}/>}
-          />
-
-          <AgriInput
-            label="Current EMI"
-            name="emi_monthly"
-            value={form.emi_monthly}
-            onChange={handleChange}
-            icon={<Calculator size={16}/>}
-          />
+          <AgriInput label="Documented Annual" name="documented_income" value={form.documented_income} onChange={handleChange} icon={<FileText size={16}/>}/>
+          <AgriInput label="Taxes Paid" name="tax" value={form.tax} onChange={handleChange} icon={<ShieldAlert size={16}/>}/>
+          <AgriInput label="Monthly Informal" name="undocumented_income_monthly" value={form.undocumented_income_monthly} onChange={handleChange} icon={<TrendingUp size={16}/>}/>
+          <AgriInput label="Current EMI" name="emi_monthly" value={form.emi_monthly} onChange={handleChange} icon={<Calculator size={16}/>}/>
 
         </div>
 
@@ -222,12 +227,12 @@ export default function Agriculture() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
 
-            <MetricCard title="Total Income" value={formatINR(result.total_adjusted_income)} />
-            <MetricCard title="Disposable" value={formatINR(result.disposable_income)} />
-            <MetricCard title="EMI Model" value={formatINR(result.eligible_loan_emi_model)} />
-            <MetricCard title="Policy Model" value={formatINR(result.eligible_loan_policy_model)} />
-            <MetricCard title="Final Eligible" value={formatINR(result.eligible_loan_amount)} highlight />
-            <MetricCard title="Risk Grade" value={result.risk_grade} grade={result.risk_grade} />
+            <MetricCard title="Total Income" value={formatINR(result.total_adjusted_income)}/>
+            <MetricCard title="Disposable" value={formatINR(result.disposable_income)}/>
+            <MetricCard title="EMI Model" value={formatINR(result.eligible_loan_emi_model)}/>
+            <MetricCard title="Policy Model" value={formatINR(result.eligible_loan_policy_model)}/>
+            <MetricCard title="Final Eligible" value={formatINR(result.eligible_loan_amount)} highlight/>
+            <MetricCard title="Risk Grade" value={result.risk_grade} grade={result.risk_grade}/>
 
           </div>
 
@@ -262,11 +267,9 @@ export default function Agriculture() {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-            <ChartIncomeSplit result={result} />
-
-            <ChartLoanModels result={result} />
-
-            <ChartStress result={result} form={form} />
+            <ChartIncomeSplit result={result}/>
+            <ChartLoanModels result={result}/>
+            <ChartStress result={result} form={form}/>
 
           </div>
 
@@ -275,10 +278,12 @@ export default function Agriculture() {
       )}
 
     </div>
+
   );
+
 }
 
-/* INPUT */
+/* INPUT FIELD */
 
 function AgriInput({ label, name, value, onChange, icon }) {
 
@@ -312,7 +317,7 @@ function AgriInput({ label, name, value, onChange, icon }) {
 
 }
 
-/* KPI */
+/* KPI CARD */
 
 function MetricCard({ title, value, highlight, grade }) {
 
@@ -337,116 +342,6 @@ function MetricCard({ title, value, highlight, grade }) {
 
     </div>
 
-  );
-
-}
-
-/* CHART COMPONENTS */
-
-function ChartIncomeSplit({ result }) {
-
-  return (
-    <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800">
-
-      <h4 className="text-xs uppercase text-slate-400 mb-4">
-        Income Split
-      </h4>
-
-      <ResponsiveContainer width="100%" height={250}>
-
-        <PieChart>
-
-          <Pie
-            data={[
-              { name:"Documented", value: result.chart_data?.income_split?.documented || 0 },
-              { name:"Undocumented", value: result.chart_data?.income_split?.undocumented || 0 }
-            ]}
-            innerRadius={60}
-            outerRadius={90}
-            dataKey="value"
-          >
-
-            <Cell fill="#10b981"/>
-            <Cell fill="#3b82f6"/>
-
-          </Pie>
-
-          <Tooltip/>
-
-        </PieChart>
-
-      </ResponsiveContainer>
-
-    </div>
-  );
-
-}
-
-function ChartLoanModels({ result }) {
-
-  return (
-    <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800">
-
-      <h4 className="text-xs uppercase text-slate-400 mb-4">
-        Loan Eligibility Models
-      </h4>
-
-      <ResponsiveContainer width="100%" height={250}>
-
-        <BarChart
-          data={[
-            { name:"EMI Model", value: result.eligible_loan_emi_model },
-            { name:"Policy Model", value: result.eligible_loan_policy_model }
-          ]}
-        >
-
-          <CartesianGrid strokeDasharray="3 3"/>
-          <XAxis dataKey="name"/>
-          <YAxis/>
-          <Tooltip/>
-          <Legend/>
-
-          <Bar dataKey="value" fill="#10b981"/>
-
-        </BarChart>
-
-      </ResponsiveContainer>
-
-    </div>
-  );
-
-}
-
-function ChartStress({ result, form }) {
-
-  return (
-    <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800">
-
-      <h4 className="text-xs uppercase text-slate-400 mb-4">
-        Income vs EMI Stress
-      </h4>
-
-      <ResponsiveContainer width="100%" height={250}>
-
-        <BarChart
-          data={[
-            { name:"Disposable", value: result.disposable_income },
-            { name:"Current EMI", value: form.emi_monthly }
-          ]}
-        >
-
-          <CartesianGrid strokeDasharray="3 3"/>
-          <XAxis dataKey="name"/>
-          <YAxis/>
-          <Tooltip/>
-
-          <Bar dataKey="value" fill="#3b82f6"/>
-
-        </BarChart>
-
-      </ResponsiveContainer>
-
-    </div>
   );
 
 }
