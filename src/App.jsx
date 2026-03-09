@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 
 import Home from "./pages/Home";
 import WorkingCapital from "./pages/WorkingCapital";
@@ -6,54 +6,74 @@ import Agriculture from "./pages/Agriculture";
 import Banking from "./pages/Banking";
 import FinalReport from "./pages/FinalReport";
 
-import { Link } from "react-router-dom";
-import { Home as HomeIcon, BarChart3, Leaf } from "lucide-react";
+import {
+  Home as HomeIcon,
+  BarChart3,
+  Leaf,
+  Landmark,
+  FileText
+} from "lucide-react";
 
-export default function BottomNav(){
+/* -------------------------
+BOTTOM NAVIGATION
+------------------------- */
 
-return(
+function BottomNav() {
+  return (
+    <div className="fixed bottom-0 left-0 right-0 bg-slate-900 flex justify-around p-3 text-white border-t border-slate-700">
 
-<div className="fixed bottom-0 left-0 right-0 bg-slate-900 flex justify-around p-3 text-white">
+      <Link to="/">
+        <HomeIcon size={20} />
+      </Link>
 
-<Link to="/"><Home size={20}/></Link>
+      <Link to="/working-capital">
+        <BarChart3 size={20} />
+      </Link>
 
-<Link to="/working-capital"><BarChart3 size={20}/></Link>
+      <Link to="/agriculture">
+        <Leaf size={20} />
+      </Link>
 
-<Link to="/agriculture"><Leaf size={20}/></Link>
+      <Link to="/banking">
+        <Landmark size={20} />
+      </Link>
 
-<Link to="/banking"><Landmark size={20}/></Link>
+      <Link to="/final-report">
+        <FileText size={20} />
+      </Link>
 
-<Link to="/final-report"><FileText size={20}/></Link>
-
-</div>
-
-)
-
+    </div>
+  );
 }
-function App() {
+
+/* -------------------------
+APP ROUTER
+------------------------- */
+
+export default function App() {
   return (
     <BrowserRouter>
 
-      <Routes>
+      <div className="pb-16">
 
-        <Route path="/" element={<Home />} />
+        <Routes>
 
-        <Route path="/working-capital" element={<WorkingCapital />} />
+          <Route path="/" element={<Home />} />
 
-        <Route path="/agriculture" element={<Agriculture />} />
+          <Route path="/working-capital" element={<WorkingCapital />} />
 
-        <Route path="/banking" element={<Banking />} />
+          <Route path="/agriculture" element={<Agriculture />} />
 
-        <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/banking" element={<Banking />} />
 
-        <Route path="/underwriting" element={<Underwriting />} />
+          <Route path="/final-report" element={<FinalReport />} />
 
-        <Route path="/final-report" element={<FinalReport />} />
+        </Routes>
 
-      </Routes>
+      </div>
+
+      <BottomNav />
 
     </BrowserRouter>
   );
 }
-
-export default App;
