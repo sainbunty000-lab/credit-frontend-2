@@ -12,8 +12,8 @@ export default function App(){
   return (
     <div style={{color:"white", padding:"40px"}}>
       APP WORKING
+      )
     </div>
-  )
 
 <BrowserRouter>
 
