@@ -8,334 +8,398 @@ import { Upload, BarChart3, ShieldCheck } from "lucide-react";
 import { bankingAnalyze } from "../services/api";
 
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  CartesianGrid,
-  Legend,
-  PieChart,
-  Pie,
-  Cell
+BarChart,
+Bar,
+XAxis,
+YAxis,
+Tooltip,
+ResponsiveContainer,
+CartesianGrid,
+Legend,
+PieChart,
+Pie,
+Cell
 } from "recharts";
 
 const STORAGE_KEY = "credit_app_v1";
 
-export default function Banking() {
+export default function Banking(){
 
-  const [file, setFile] = useState(null);
-  const [result, setResult] = useState(null);
-  const [loading, setLoading] = useState(false);
+const [file,setFile] = useState(null);
+const [result,setResult] = useState(null);
+const [loading,setLoading] = useState(false);
 
-  /* LOAD STORAGE */
 
-  useEffect(() => {
+/* LOAD STORAGE */
 
-    const stored =
-      JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+useEffect(()=>{
 
-    if (stored.banking) {
-      setResult(stored.banking.result || null);
-    }
+try{
 
-  }, []);
+const stored =
+JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
 
-  /* SAVE STORAGE */
+if(stored.banking){
 
-  useEffect(() => {
+setResult(stored.banking.result || null);
 
-    const existing =
-      JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+}
 
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({
-        ...existing,
-        banking: { result }
-      })
-    );
+}catch{
+console.log("Storage load failed");
+}
 
-  }, [result]);
+},[]);
 
-  /* ANALYZE BANK STATEMENT */
 
-  const handleAnalyze = async () => {
+/* SAVE STORAGE */
 
-    if (!file) {
-      alert("Upload bank statement");
-      return;
-    }
+useEffect(()=>{
 
-    try {
+try{
 
-      setLoading(true);
+const existing =
+JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
 
-      const formData = new FormData();
-      formData.append("file", file);
+localStorage.setItem(
+STORAGE_KEY,
+JSON.stringify({
+...existing,
+banking:{result}
+})
+);
 
-      const response = await bankingAnalyze(formData);
+}catch{
+console.log("Storage save failed");
+}
 
-      const data = response?.data || response || {};
+},[result]);
 
-      setResult(data.analysis || data || null);
 
-    } catch {
+/* ANALYZE BANK STATEMENT */
 
-      alert("Analysis failed");
+const handleAnalyze = async ()=>{
 
-    } finally {
+if(!file){
 
-      setLoading(false);
+alert("Upload bank statement");
+return;
 
-    }
+}
 
-  };
+try{
 
-  const COLORS = ["#3b82f6", "#ef4444", "#10b981"];
+setLoading(true);
 
-  return (
+const formData = new FormData();
+formData.append("file",file);
 
-    <div className="min-h-screen bg-[#070b14] p-4 sm:p-6 pt-20 pb-32 text-slate-200">
+const response = await bankingAnalyze(formData);
 
-      {/* NAVIGATION */}
+const data = response?.data || response || {};
 
-      <NavigationButtons
+setResult(data.analysis || data || null);
+
+}catch(err){
+
+console.error(err);
+alert("Bank analysis failed");
+
+}finally{
+
+setLoading(false);
+
+}
+
+};
+
+
+const COLORS = ["#3b82f6","#ef4444","#10b981"];
+
+
+return(
+
+<div className="min-h-screen bg-[#070b14] p-4 sm:p-6 pt-20 pb-32 text-slate-200">
+
+{/* NAVIGATION */}
+
+<NavigationButtons
 prev="/agriculture"
 next="/final-report"
 />
 
-      <LOSProgress />
+<LOSProgress/>
 
-      {/* MAIN CONTENT */}
+<div className="space-y-10 max-w-7xl mx-auto">
 
-      <div className="space-y-10 max-w-7xl mx-auto">
 
-        {/* HEADER */}
+{/* HEADER */}
 
-        <div className="flex items-center gap-3">
+<div className="flex items-center gap-3">
 
-          <BarChart3 className="text-emerald-400"/>
+<BarChart3 className="text-emerald-400"/>
 
-          <h2 className="text-2xl font-bold text-emerald-400">
-            Banking Intelligence Engine
-          </h2>
+<h2 className="text-2xl font-bold text-emerald-400">
+Banking Intelligence Engine
+</h2>
 
-        </div>
+</div>
 
-        {/* FILE UPLOAD */}
 
-        <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800">
+{/* FILE UPLOAD */}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+<div className="bg-slate-900 p-6 rounded-2xl border border-slate-800">
 
-            <input
-              type="file"
-              accept=".pdf,.csv,.xlsx"
-              onChange={(e)=>setFile(e.target.files[0])}
-              className="bg-slate-800 p-3 rounded-xl"
-            />
+<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
-            <button
-              onClick={handleAnalyze}
-              className="bg-emerald-600 hover:bg-emerald-700 px-6 py-3 rounded-xl"
-            >
-              <Upload size={16} className="inline mr-2"/>
-              {loading ? "Analyzing..." : "Analyze Statement"}
-            </button>
+<input
+type="file"
+accept=".pdf,.csv,.xlsx"
+onChange={(e)=>setFile(e.target.files[0])}
+className="bg-slate-800 p-3 rounded-xl"
+/>
 
-          </div>
+<button
+onClick={handleAnalyze}
+className="bg-emerald-600 hover:bg-emerald-700 px-6 py-3 rounded-xl"
+>
 
-        </div>
+<Upload size={16} className="inline mr-2"/>
 
-        {/* RESULTS */}
+{loading?"Analyzing...":"Analyze Statement"}
 
-        {result && (
+</button>
 
-          <div className="space-y-10">
+</div>
 
-            {/* KPI */}
+</div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 
-              <Metric title="Total Credit" value={result.statement_summary?.total_credit}/>
-              <Metric title="Total Debit" value={result.statement_summary?.total_debit}/>
-              <Metric title="Net Surplus" value={result.statement_summary?.net_surplus}/>
-              <Metric title="Salary Income" value={result.income_analysis?.salary_income}/>
+{/* RESULTS */}
 
-            </div>
+{result &&(
 
-            {/* RISK INDICATOR */}
+<div className="space-y-10">
 
-            <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800">
 
-              <div className="flex justify-between mb-3">
+{/* KPI */}
 
-                <h3 className="text-lg text-white flex items-center gap-2">
-                  <ShieldCheck size={18}/>
-                  Banking Hygiene Score
-                </h3>
+<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 
-                <span className="text-2xl font-bold text-emerald-400">
-                  {result.risk_summary?.hygiene_score || 0}
-                </span>
+<Metric
+title="Total Credit"
+value={result.statement_summary?.total_credit}
+/>
 
-              </div>
+<Metric
+title="Total Debit"
+value={result.statement_summary?.total_debit}
+/>
 
-              <div className="w-full bg-slate-800 rounded-full h-4">
+<Metric
+title="Net Surplus"
+value={result.statement_summary?.net_surplus}
+/>
 
-                <div
-                  className="h-4 rounded-full"
-                  style={{
-                    width:`${result.risk_summary?.hygiene_score || 0}%`,
-                    background:"linear-gradient(90deg,#ef4444,#f59e0b,#22c55e)"
-                  }}
-                />
+<Metric
+title="Salary Income"
+value={result.income_analysis?.salary_income}
+/>
 
-              </div>
+</div>
 
-              <div className="mt-2 text-sm text-slate-400">
 
-                Risk Grade: {result.risk_summary?.risk_grade || "-"} |
-                Status: {result.risk_summary?.status || "-"}
+{/* RISK INDICATOR */}
 
-              </div>
+<div className="bg-slate-900 p-6 rounded-2xl border border-slate-800">
 
-            </div>
+<div className="flex justify-between mb-3">
 
-            {/* CHARTS */}
+<h3 className="text-lg text-white flex items-center gap-2">
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+<ShieldCheck size={18}/>
 
-              {/* CASH FLOW */}
+Banking Hygiene Score
 
-              <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800">
+</h3>
 
-                <h3 className="text-slate-300 mb-4">
-                  Monthly Cash Flow
-                </h3>
+<span className="text-2xl font-bold text-emerald-400">
 
-                <ResponsiveContainer width="100%" height={320}>
+{result.risk_summary?.hygiene_score || 0}
 
-                  <BarChart data={result.chart_data?.monthly_trend || []}>
+</span>
 
-                    <CartesianGrid strokeDasharray="3 3"/>
+</div>
 
-                    <XAxis dataKey="month"/>
 
-                    <YAxis/>
+<div className="w-full bg-slate-800 rounded-full h-4">
 
-                    <Tooltip/>
+<div
+className="h-4 rounded-full"
+style={{
+width:`${result.risk_summary?.hygiene_score || 0}%`,
+background:"linear-gradient(90deg,#ef4444,#f59e0b,#22c55e)"
+}}
+/>
 
-                    <Legend/>
+</div>
 
-                    <Bar dataKey="credit" fill="#3b82f6"/>
 
-                    <Bar dataKey="debit" fill="#ef4444"/>
+<div className="mt-2 text-sm text-slate-400">
 
-                  </BarChart>
+Risk Grade : {result.risk_summary?.risk_grade || "-"} |
+Status : {result.risk_summary?.status || "-"}
 
-                </ResponsiveContainer>
+</div>
 
-              </div>
+</div>
 
-              {/* SPENDING PIE */}
 
-              <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800">
+{/* CHARTS */}
 
-                <h3 className="text-slate-300 mb-4">
-                  Spending Distribution
-                </h3>
+<div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
-                <ResponsiveContainer width="100%" height={320}>
 
-                  <PieChart>
+{/* CASHFLOW CHART */}
 
-                    <Pie
-                      data={[
-                        {
-                          name:"UPI Spends",
-                          value:Number(result.expense_analysis?.upi_spends || 0)
-                        },
-                        {
-                          name:"Salary Income",
-                          value:Number(result.income_analysis?.salary_income || 0)
-                        }
-                      ]}
-                      dataKey="value"
-                      outerRadius={110}
-                      label
-                    >
+<div className="bg-slate-900 p-6 rounded-2xl border border-slate-800">
 
-                      {COLORS.map((c,i)=>(
-                        <Cell key={i} fill={c}/>
-                      ))}
+<h3 className="text-slate-300 mb-4">
 
-                    </Pie>
+Monthly Cash Flow
 
-                    <Tooltip/>
+</h3>
 
-                  </PieChart>
+<ResponsiveContainer width="100%" height={320}>
 
-                </ResponsiveContainer>
+<BarChart data={result.chart_data?.monthly_trend || []}>
 
-              </div>
+<CartesianGrid strokeDasharray="3 3"/>
 
-            </div>
+<XAxis dataKey="month"/>
 
-            {/* FINANCIAL STABILITY */}
+<YAxis/>
 
-            <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800">
+<Tooltip/>
 
-              <h3 className="text-slate-300 mb-4">
-                Financial Stability Indicator
-              </h3>
+<Legend/>
 
-              <div className="text-3xl font-bold text-emerald-400">
-                {result.financial_indicators?.financial_strength_index || "-"}
-              </div>
+<Bar dataKey="credit" fill="#3b82f6"/>
 
-              <p className="text-slate-400 mt-2">
-                {result.financial_indicators?.stability_tag || "-"}
-              </p>
+<Bar dataKey="debit" fill="#ef4444"/>
 
-            </div>
+</BarChart>
 
-          </div>
+</ResponsiveContainer>
 
-        )}
+</div>
 
-      </div>
 
-      {/* EXPORT CAM */}
+{/* SPENDING PIE */}
 
-      <ExportCAM />
+<div className="bg-slate-900 p-6 rounded-2xl border border-slate-800">
 
-    </div>
+<h3 className="text-slate-300 mb-4">
 
-  );
+Spending Distribution
+
+</h3>
+
+<ResponsiveContainer width="100%" height={320}>
+
+<PieChart>
+
+<Pie
+data={[
+{
+name:"UPI Spends",
+value:Number(result.expense_analysis?.upi_spends || 0)
+},
+{
+name:"Salary Income",
+value:Number(result.income_analysis?.salary_income || 0)
+}
+]}
+dataKey="value"
+outerRadius={110}
+label
+>
+
+{COLORS.map((c,i)=>(
+<Cell key={i} fill={c}/>
+))}
+
+</Pie>
+
+<Tooltip/>
+
+</PieChart>
+
+</ResponsiveContainer>
+
+</div>
+
+</div>
+
+
+{/* FINANCIAL STABILITY */}
+
+<div className="bg-slate-900 p-6 rounded-2xl border border-slate-800">
+
+<h3 className="text-slate-300 mb-4">
+
+Financial Stability Indicator
+
+</h3>
+
+<div className="text-3xl font-bold text-emerald-400">
+
+{result.financial_indicators?.financial_strength_index || "-"}
+
+</div>
+
+<p className="text-slate-400 mt-2">
+
+{result.financial_indicators?.stability_tag || "-"}
+
+</p>
+
+</div>
+
+</div>
+
+)}
+
+</div>
+
+
+<ExportCAM/>
+
+</div>
+
+);
 
 }
+
 
 /* KPI CARD */
 
 function Metric({title,value}){
 
-  return(
+return(
 
-    <div className="bg-slate-900 p-5 rounded-2xl border border-slate-800">
+<div className="bg-slate-900 p-5 rounded-2xl border border-slate-800">
 
-      <p className="text-slate-400 text-sm">
-        {title}
-      </p>
+<p className="text-slate-400 text-sm">
+{title}
+</p>
 
-      <h2 className="text-xl font-bold mt-2 text-white">
-        ₹ {Number(value || 0).toLocaleString("en-IN")}
-      </h2>
+<h2 className="text-xl font-bold mt-2 text-white">
+₹ {Number(value || 0).toLocaleString("en-IN")}
+</h2>
 
-    </div>
+</div>
 
-  );
+);
 
 }
