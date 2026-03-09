@@ -98,7 +98,7 @@ try {
   formData.append("profit_loss", profitLoss);
 
   const response = await fetch(
-    `${API}/wc/parse-and-calculate`,
+    `${API}/wc/upload-dual`,
     {
       method: "POST",
       body: formData
@@ -113,24 +113,23 @@ try {
 
   console.log("Backend Response:", data);
 
-  /* extracted numbers */
+  setForm(prev => ({
+    ...prev,
+    current_assets: data.current_assets || prev.current_assets,
+    current_liabilities: data.current_liabilities || prev.current_liabilities,
+    inventory: data.inventory || prev.inventory,
+    receivables: data.receivables || prev.receivables,
+    annual_sales: data.annual_sales || prev.annual_sales,
+    cogs: data.cogs || prev.cogs
+  }));
 
-  if (data.extracted_values) {
-
-    setForm(prev => ({
-      ...prev,
-      ...data.extracted_values
-    }));
-
-  }
-
-  /* model calculations */
-
-  if (data.calculation) {
-
-    setResult(data.calculation);
-
-  }
+  setResult({
+    nwc: data.ratios?.nwc,
+    current_ratio: data.ratios?.current_ratio,
+    wc_turnover: data.ratios?.wc_turnover,
+    drawing_power: data.ratios?.drawing_power,
+    liquidity_score: data.risk?.risk_score
+  });
 
   setShowResults(true);
 
@@ -146,6 +145,7 @@ try {
 
 }
 };
+
 
 /* WC MODEL */
 
@@ -166,8 +166,6 @@ const mpbf_limit = sales * 0.25;
 const turnover_limit = sales * 0.20;
 
 const drawing_power = nwc>0 ? nwc*0.75 : 0;
-
-/* RISK SCORE */
 
 let score = 0;
 
@@ -205,9 +203,6 @@ return(
 <div className="min-h-screen bg-[#070b14] p-4 sm:p-6 pt-20 pb-32 text-slate-200">
 
 <NavigationButtons prev="/" next="/agriculture"/>
-
-
-{/* HEADER */}
 
 <div className="flex justify-between items-center mb-8 max-w-7xl mx-auto">
 
@@ -320,9 +315,6 @@ Run Financial Model
 
 <div className="max-w-7xl mx-auto mt-8 space-y-8">
 
-
-{/* KPI */}
-
 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 
 <MetricCard title="Net Working Capital" value={formatINR(result.nwc)}/>
@@ -331,9 +323,6 @@ Run Financial Model
 <MetricCard title="Drawing Power" value={formatINR(result.drawing_power)}/>
 
 </div>
-
-
-{/* RISK SCORE */}
 
 <div className="bg-[#0f172a] p-6 rounded-3xl border border-slate-800">
 
@@ -347,15 +336,11 @@ Liquidity Risk Score
 
 </div>
 
-
-{/* CHART */}
-
 <div className="bg-[#0f172a] p-6 rounded-3xl border border-slate-800">
 
 <h3 className="text-white text-sm font-bold mb-6 flex items-center gap-2">
 
 <BarChart3 size={18}/>
-
 Asset Composition
 
 </h3>
@@ -389,35 +374,6 @@ data={[
 </BarChart>
 
 </ResponsiveContainer>
-
-</div>
-
-
-{/* CALCULATION LOGIC */}
-
-<div className="bg-[#0f172a] p-6 rounded-3xl border border-slate-800">
-
-<h3 className="text-white font-semibold mb-4">
-Working Capital Model Logic
-</h3>
-
-<ul className="text-sm text-slate-300 space-y-2">
-
-<li>NWC = Current Assets − Current Liabilities</li>
-
-<li>Current Ratio = Current Assets ÷ Current Liabilities</li>
-
-<li>WC Turnover = Annual Sales ÷ Net Working Capital</li>
-
-<li>MPBF Limit = 25% of Annual Sales</li>
-
-<li>Turnover Method Limit = 20% of Annual Sales</li>
-
-<li>Drawing Power = Net Working Capital × 75%</li>
-
-<li>Liquidity Score based on Ratio, Turnover and Drawing Power</li>
-
-</ul>
 
 </div>
 
@@ -509,5 +465,4 @@ return(
 </div>
 
 );
-
 }
