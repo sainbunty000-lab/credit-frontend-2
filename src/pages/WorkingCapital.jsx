@@ -50,7 +50,6 @@ const [result,setResult] = useState(
 stored?.workingCapital?.result || null
 );
 
-
 /* FORMAT INR */
 
 const formatINR = (val)=>
@@ -79,13 +78,18 @@ workingCapital:{form,result}
 },[form,result]);
 
 
-/* FILE EXTRACTION */
+/* ===============================
+FILE EXTRACTION
+================================ */
 
 const extractFiles = async ()=>{
 
 if(!balanceSheet || !profitLoss){
+
 alert("Upload Balance Sheet and Profit & Loss");
+
 return;
+
 }
 
 try{
@@ -93,6 +97,8 @@ try{
 setLoading(true);
 
 const fd = new FormData();
+
+/* backend expected fields */
 
 fd.append("balance_sheet",balanceSheet);
 fd.append("profit_loss",profitLoss);
@@ -102,7 +108,15 @@ method:"POST",
 body:fd
 });
 
+if(!res.ok){
+
+throw new Error("Server error");
+
+}
+
 const data = await res.json();
+
+console.log("Extraction Response:",data);
 
 if(data?.extracted_values){
 
@@ -114,7 +128,9 @@ setForm(prev=>({
 }
 
 if(data?.calculations){
+
 setResult(data.calculations);
+
 }
 
 setShowResults(true);
@@ -122,7 +138,8 @@ setShowResults(true);
 }catch(err){
 
 console.error(err);
-alert("Extraction failed");
+
+alert("Extraction failed. Please check backend API.");
 
 }finally{
 
@@ -133,7 +150,9 @@ setLoading(false);
 };
 
 
-/* WC MODEL */
+/* ===============================
+WORKING CAPITAL MODEL
+================================ */
 
 const calculate = ()=>{
 
@@ -152,6 +171,9 @@ const mpbf_limit = sales * 0.25;
 const turnover_limit = sales * 0.20;
 
 const drawing_power = nwc>0 ? nwc*0.75 : 0;
+
+
+/* LIQUIDITY SCORE */
 
 let score = 0;
 
@@ -184,28 +206,32 @@ setForm(prev=>({
 };
 
 
+/* ===============================
+UI
+================================ */
+
 return(
 
-<div className="min-h-screen bg-[#070b14] p-4 sm:p-6 pt-20 pb-32 text-slate-200">
+<div className="min-h-screen bg-[#070b14] p-4 sm:p-6 pt-16 pb-28 text-slate-200">
 
 <NavigationButtons prev="/" next="/agriculture"/>
 
 
 {/* HEADER */}
 
-<div className="flex justify-between items-center mb-8 max-w-7xl mx-auto">
+<div className="flex justify-between items-center mb-6 max-w-7xl mx-auto">
 
-<div className="flex items-center gap-4">
+<div className="flex items-center gap-3">
 
-<BarChart3 className="text-blue-500 w-8 h-8"/>
+<BarChart3 className="text-blue-500 w-6 h-6"/>
 
 <div>
 
-<h2 className="text-2xl sm:text-3xl font-extrabold text-white">
+<h2 className="text-lg sm:text-2xl lg:text-3xl font-bold text-white">
 Working Capital Analysis
 </h2>
 
-<p className="text-slate-500 text-sm">
+<p className="text-xs text-slate-400">
 Financial Liquidity & MPBF Model
 </p>
 
@@ -217,12 +243,12 @@ Financial Liquidity & MPBF Model
 
 <button
 onClick={()=>setShowResults(!showResults)}
-className="flex items-center gap-2 bg-slate-800 px-4 py-2 rounded-xl"
+className="flex items-center gap-2 bg-slate-800 px-3 py-2 rounded-lg text-sm"
 >
 
-{showResults ? <EyeOff size={18}/> : <Eye size={18}/>}
+{showResults ? <EyeOff size={16}/> : <Eye size={16}/>}
 
-{showResults?"Hide Analysis":"Show Analysis"}
+{showResults ? "Hide":"Show"}
 
 </button>
 
@@ -237,25 +263,25 @@ className="flex items-center gap-2 bg-slate-800 px-4 py-2 rounded-xl"
 
 <UploadCard
 label="Balance Sheet"
-icon={<FileText size={20}/>}
+icon={<FileText size={18}/>}
 onChange={(e)=>setBalanceSheet(e.target.files[0])}
 />
 
 <UploadCard
 label="Profit & Loss"
-icon={<TrendingUp size={20}/>}
+icon={<TrendingUp size={18}/>}
 onChange={(e)=>setProfitLoss(e.target.files[0])}
 />
 
 <button
 onClick={extractFiles}
 disabled={loading}
-className="bg-blue-600 hover:bg-blue-500 text-white py-4 rounded-2xl flex items-center justify-center gap-2"
+className="bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl flex items-center justify-center gap-2"
 >
 
-<UploadCloud size={20}/>
+<UploadCloud size={18}/>
 
-{loading?"Processing...":"Extract Data"}
+{loading ? "Processing..." : "Extract Data"}
 
 </button>
 
@@ -264,13 +290,13 @@ className="bg-blue-600 hover:bg-blue-500 text-white py-4 rounded-2xl flex items-
 
 {/* INPUTS */}
 
-<div className="max-w-7xl mx-auto mt-8 bg-[#0f172a]/40 p-6 sm:p-8 rounded-3xl border border-slate-800">
+<div className="max-w-7xl mx-auto mt-6 bg-[#0f172a]/40 p-5 rounded-2xl border border-slate-800">
 
-<h3 className="text-white font-semibold mb-6">
+<h3 className="text-sm font-semibold mb-4 text-white">
 Financial Inputs
 </h3>
 
-<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
 
 <InputField label="Current Assets" value={form.current_assets} onChange={(v)=>updateField("current_assets",v)}/>
 <InputField label="Current Liabilities" value={form.current_liabilities} onChange={(v)=>updateField("current_liabilities",v)}/>
@@ -281,19 +307,15 @@ Financial Inputs
 
 </div>
 
-<div className="mt-8">
-
 <button
 onClick={calculate}
-className="bg-white text-slate-900 px-8 py-3 rounded-xl flex items-center gap-2 font-bold"
+className="mt-5 bg-white text-slate-900 px-6 py-2 rounded-lg flex items-center gap-2 text-sm font-semibold"
 >
 
-<Calculator size={18}/>
+<Calculator size={16}/>
 Run Financial Model
 
 </button>
-
-</div>
 
 </div>
 
@@ -302,9 +324,12 @@ Run Financial Model
 
 {result && showResults &&(
 
-<div className="max-w-7xl mx-auto mt-8 space-y-8">
+<div className="max-w-7xl mx-auto mt-6 space-y-6">
 
-<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+{/* KPI */}
+
+<div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
 
 <MetricCard title="Net Working Capital" value={formatINR(result.nwc)}/>
 <MetricCard title="Current Ratio" value={result.current_ratio}/>
@@ -316,13 +341,13 @@ Run Financial Model
 
 {/* LIQUIDITY SCORE */}
 
-<div className="bg-[#0f172a] p-6 rounded-3xl border border-slate-800">
+<div className="bg-[#0f172a] p-5 rounded-2xl border border-slate-800">
 
-<h3 className="text-white font-semibold mb-3">
+<p className="text-xs text-slate-400 mb-1">
 Liquidity Risk Score
-</h3>
+</p>
 
-<h2 className="text-3xl font-bold text-emerald-400">
+<h2 className="text-2xl font-bold text-emerald-400">
 {result.liquidity_score}
 </h2>
 
@@ -331,14 +356,16 @@ Liquidity Risk Score
 
 {/* CHART */}
 
-<div className="bg-[#0f172a] p-6 rounded-3xl border border-slate-800">
+<div className="bg-[#0f172a] p-5 rounded-2xl border border-slate-800">
 
-<h3 className="text-white text-sm font-bold mb-6 flex items-center gap-2">
-<BarChart3 size={18}/>
+<h3 className="text-xs font-semibold mb-3 text-white flex items-center gap-2">
+
+<BarChart3 size={16}/>
 Asset Composition
+
 </h3>
 
-<ResponsiveContainer width="100%" height={320}>
+<ResponsiveContainer width="100%" height={260}>
 
 <BarChart
 data={[
@@ -370,6 +397,28 @@ data={[
 
 </div>
 
+
+{/* CALCULATION LOGIC */}
+
+<div className="bg-[#0f172a] p-5 rounded-2xl border border-slate-800">
+
+<h3 className="text-sm font-semibold mb-3 text-white">
+Model Calculation Logic
+</h3>
+
+<ul className="text-xs text-slate-300 space-y-1">
+
+<li>NWC = Current Assets − Current Liabilities</li>
+<li>Current Ratio = Current Assets ÷ Current Liabilities</li>
+<li>WC Turnover = Annual Sales ÷ Net Working Capital</li>
+<li>MPBF Limit = 25% of Annual Sales</li>
+<li>Turnover Limit = 20% of Annual Sales</li>
+<li>Drawing Power = NWC × 75%</li>
+
+</ul>
+
+</div>
+
 </div>
 
 )}
@@ -389,7 +438,7 @@ return(
 
 <div>
 
-<label className="text-xs text-slate-500 uppercase">
+<label className="text-xs text-slate-400">
 {label}
 </label>
 
@@ -397,7 +446,7 @@ return(
 type="number"
 value={value || ""}
 onChange={(e)=>onChange(e.target.value)}
-className="w-full bg-[#070b14] text-white px-3 py-3 rounded-xl border border-slate-800 mt-1"
+className="w-full bg-[#070b14] text-white px-3 py-2 rounded-lg border border-slate-800 mt-1 text-sm"
 />
 
 </div>
@@ -413,13 +462,15 @@ function UploadCard({label,icon,onChange}){
 
 return(
 
-<div className="bg-[#0f172a] p-6 rounded-2xl border border-slate-800">
+<div className="bg-[#0f172a] p-4 rounded-xl border border-slate-800">
 
-<div className="flex items-center gap-2 mb-3 text-slate-400">
+<div className="flex items-center gap-2 mb-2 text-slate-400">
 
 {icon}
 
-<span className="text-sm font-semibold">{label}</span>
+<span className="text-xs font-semibold">
+{label}
+</span>
 
 </div>
 
@@ -443,13 +494,13 @@ function MetricCard({title,value}){
 
 return(
 
-<div className="bg-[#0f172a] p-5 rounded-xl border border-slate-800">
+<div className="bg-[#0f172a] p-4 rounded-xl border border-slate-800">
 
-<p className="text-slate-400 text-sm">
+<p className="text-xs text-slate-400">
 {title}
 </p>
 
-<h2 className="text-xl font-bold mt-2 text-white">
+<h2 className="text-lg font-bold mt-1 text-white">
 {value}
 </h2>
 
