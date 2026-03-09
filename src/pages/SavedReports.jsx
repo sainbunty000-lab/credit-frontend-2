@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import NavigationButtons from "../components/NavigationButtons";
 
 const CAM_STORAGE = "cam_reports";
 const STORAGE_KEY = "credit_app_v1";
@@ -55,7 +56,11 @@ export default function SavedReports(){
 
   return(
 
-  <div className="p-6 text-white min-h-screen bg-slate-950">
+  <div className="p-6 pt-20 pb-28 text-white min-h-screen bg-slate-950">
+
+  {/* BACK TO HOME BUTTON */}
+
+  <NavigationButtons prev="/" backHome />
 
   <h2 className="text-2xl font-bold mb-6">
   Saved CAM Reports
