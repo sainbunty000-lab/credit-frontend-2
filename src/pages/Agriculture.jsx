@@ -13,7 +13,7 @@ import {
   ShieldAlert
 } from "lucide-react";
 
-import { agriCalculate } from "../../services/api";
+import { agriCalculate } from "../services/api";
 
 import {
   PieChart,
