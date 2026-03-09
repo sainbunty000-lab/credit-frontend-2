@@ -1,29 +1,23 @@
 import { useNavigate } from "react-router-dom";
 
-export default function NavigationButtons({ prev, next, children }) {
+export default function NavigationButtons({ prev, next, backHome = false }) {
 
 const navigate = useNavigate();
 
 return (
 
-<div className="bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 flex items-center justify-between">
+<div className="fixed top-3 left-0 right-0 flex justify-between px-4 z-50">
 
 {/* LEFT BUTTON */}
 
-{prev ? (
+{prev && (
 <button
 onClick={() => navigate(prev)}
 className="bg-slate-800 px-4 py-2 rounded text-white"
 >
-← Previous
+{backHome ? "← Back to Home" : "← Previous"}
 </button>
-) : <div></div>}
-
-{/* CENTER CONTENT (STEP BAR) */}
-
-<div className="flex-1 flex justify-center">
-{children}
-</div>
+)}
 
 {/* RIGHT BUTTON */}
 
