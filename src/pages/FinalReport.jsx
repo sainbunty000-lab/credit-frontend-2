@@ -37,7 +37,7 @@ export default function FinalReport(){
     const agriScore = agri?.risk_score ?? null;
     const bankingScore = banking?.risk_summary?.hygiene_score ?? null;
 
-    /* SCORE ENGINE */
+    /* CREDIT SCORE ENGINE */
 
     let score = 0;
     let weight = 0;
@@ -84,6 +84,8 @@ export default function FinalReport(){
 
   const COLORS = ["#10b981","#3b82f6"];
 
+  /* MULTI PAGE PDF EXPORT */
+
   const exportPDF = async()=>{
 
     const element =
@@ -98,11 +100,36 @@ export default function FinalReport(){
     const pdf =
       new jsPDF("p","mm","a4");
 
-    const imgWidth=210;
-    const imgHeight =
-      (canvas.height*imgWidth)/canvas.width;
+    const imgWidth = 210;
+    const pageHeight = 295;
 
-    pdf.addImage(imgData,"PNG",0,0,imgWidth,imgHeight);
+    const imgHeight =
+      (canvas.height * imgWidth) / canvas.width;
+
+    let heightLeft = imgHeight;
+    let position = 0;
+
+    pdf.addImage(imgData,"PNG",0,position,imgWidth,imgHeight);
+    heightLeft -= pageHeight;
+
+    while(heightLeft >= 0){
+
+      position = heightLeft - imgHeight;
+
+      pdf.addPage();
+
+      pdf.addImage(
+        imgData,
+        "PNG",
+        0,
+        position,
+        imgWidth,
+        imgHeight
+      );
+
+      heightLeft -= pageHeight;
+
+    }
 
     pdf.save("CAM_Report.pdf");
 
@@ -110,11 +137,11 @@ export default function FinalReport(){
 
   return(
 
-  <div className="space-y-10">
+  <div className="space-y-10 p-4 sm:p-6">
 
   <div
     id="cam-report"
-    className="bg-slate-900 p-8 rounded-xl border border-slate-800 space-y-10"
+    className="bg-slate-900 p-6 sm:p-8 rounded-xl border border-slate-800 space-y-10"
   >
 
   <h2 className="text-xl font-bold text-emerald-400">
@@ -129,7 +156,7 @@ export default function FinalReport(){
       Final Credit Score
     </p>
 
-    <h2 className="text-3xl font-bold text-white">
+    <h2 className="text-4xl font-bold text-white">
       {report.score.toFixed(1)}
     </h2>
 
@@ -144,7 +171,7 @@ export default function FinalReport(){
 
   <Section title="Working Capital Analysis">
 
-  <div className="grid grid-cols-3 gap-6">
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
   <Metric
     label="Current Ratio"
@@ -165,7 +192,7 @@ export default function FinalReport(){
 
   <ChartCard>
 
-  <ResponsiveContainer width="100%" height={280}>
+  <ResponsiveContainer width="100%" height={260}>
 
   <BarChart data={[
     {name:"Assets",value:data.wc.current_assets||0},
@@ -198,7 +225,7 @@ export default function FinalReport(){
 
   <Section title="Agriculture Analysis">
 
-  <div className="grid grid-cols-3 gap-6">
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
   <Metric
     label="Disposable Income"
@@ -219,7 +246,7 @@ export default function FinalReport(){
 
   <ChartCard>
 
-  <ResponsiveContainer width="100%" height={280}>
+  <ResponsiveContainer width="100%" height={260}>
 
   <PieChart>
 
@@ -235,7 +262,7 @@ export default function FinalReport(){
       }
     ]}
     dataKey="value"
-    outerRadius={110}
+    outerRadius={100}
   >
 
   {COLORS.map((c,i)=>(
@@ -263,7 +290,7 @@ export default function FinalReport(){
 
   <Section title="Banking Behaviour">
 
-  <div className="grid grid-cols-3 gap-6">
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
   <Metric
     label="Total Credit"
@@ -284,7 +311,7 @@ export default function FinalReport(){
 
   <ChartCard>
 
-  <ResponsiveContainer width="100%" height={280}>
+  <ResponsiveContainer width="100%" height={260}>
 
   <BarChart
     data={data.banking.chart_data?.monthly_trend||[]}
@@ -324,6 +351,8 @@ export default function FinalReport(){
   </div>
 
   </div>
+
+  {/* EXPORT BUTTON */}
 
   <button
     onClick={exportPDF}
