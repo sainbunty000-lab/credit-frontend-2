@@ -9,8 +9,6 @@ import FinalReport from "./pages/FinalReport";
 import BottomNav from "./components/BottomNav";
 
 export default function App(){
-  return <h1 style={{color:"white"}}>APP WORKING</h1>
-}
 
 return(
 
