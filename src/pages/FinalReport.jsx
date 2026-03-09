@@ -81,62 +81,71 @@ workingCapital:{form,result}
 
 /* FILE EXTRACTION */
 
-const extractFiles = async ()=>{
+const extractFiles = async () => {
 
-if(!balanceSheet || !profitLoss){
-
-alert("Upload Balance Sheet and Profit & Loss");
-
-return;
-
+if (!balanceSheet || !profitLoss) {
+  alert("Upload Balance Sheet and Profit & Loss");
+  return;
 }
 
-try{
+try {
 
-setLoading(true);
+  setLoading(true);
 
-const fd = new FormData();
+  const formData = new FormData();
 
-fd.append("balance_sheet",balanceSheet);
-fd.append("profit_loss",profitLoss);
+  formData.append("balance_sheet", balanceSheet);
+  formData.append("profit_loss", profitLoss);
 
-const res = await fetch(`${API}/wc/upload-dual`,{
-method:"POST",
-body:fd
-});
+  const response = await fetch(
+    `${API}/wc/parse-and-calculate`,
+    {
+      method: "POST",
+      body: formData
+    }
+  );
 
-const data = await res.json();
+  if (!response.ok) {
+    throw new Error("Server error");
+  }
 
-if(data?.extracted_values){
+  const data = await response.json();
 
-setForm(prev=>({
-...prev,
-...data.extracted_values
-}));
+  console.log("Backend Response:", data);
+
+  /* extracted numbers */
+
+  if (data.extracted_values) {
+
+    setForm(prev => ({
+      ...prev,
+      ...data.extracted_values
+    }));
+
+  }
+
+  /* model calculations */
+
+  if (data.calculation) {
+
+    setResult(data.calculation);
+
+  }
+
+  setShowResults(true);
+
+} catch (error) {
+
+  console.error("Extraction error:", error);
+
+  alert("Extraction failed. Check backend logs.");
+
+} finally {
+
+  setLoading(false);
 
 }
-
-if(data?.calculations){
-
-setResult(data.calculations);
-
-}
-
-setShowResults(true);
-
-}catch(err){
-
-console.error(err);
-alert("Extraction failed");
-
-}finally{
-
-setLoading(false);
-
-}
-
 };
-
 
 /* WC MODEL */
 
