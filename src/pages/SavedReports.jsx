@@ -1,67 +1,128 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+const CAM_STORAGE = "cam_reports";
+const STORAGE_KEY = "credit_app_v1";
+
 export default function SavedReports(){
 
- const [reports,setReports] = useState([]);
- const navigate = useNavigate();
+  const [reports,setReports] = useState([]);
+  const navigate = useNavigate();
 
- useEffect(()=>{
+  useEffect(()=>{
 
-   const stored =
-     JSON.parse(localStorage.getItem("cam_reports") || "[]");
+    const stored =
+      JSON.parse(localStorage.getItem(CAM_STORAGE) || "[]");
 
-   setReports(stored);
+    setReports(stored);
 
- },[]);
-
-
- const openReport = (report)=>{
-
-   localStorage.setItem(
-     "credit_app_v1",
-     JSON.stringify(report.data)
-   );
-
-   navigate("/working-capital");
-
- };
+  },[]);
 
 
- return(
+  /* OPEN SAVED REPORT */
 
- <div className="p-6 text-white">
+  const openReport = (report)=>{
 
- <h2 className="text-2xl mb-6">
- Saved CAM Reports
- </h2>
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(report.data)
+    );
 
- {reports.length===0 && (
-   <p>No reports saved yet</p>
- )}
+    navigate("/working-capital");
 
- {reports.map((r)=>(
+  };
 
- <div
- key={r.id}
- onClick={()=>openReport(r)}
- className="bg-slate-800 p-4 mb-4 rounded cursor-pointer hover:bg-slate-700"
- >
 
- <h3 className="text-lg">
- {r.name}
- </h3>
+  /* DELETE REPORT */
 
- <p className="text-sm text-gray-400">
- {r.date}
- </p>
+  const deleteReport = (id)=>{
 
- </div>
+    const existing =
+      JSON.parse(localStorage.getItem(CAM_STORAGE) || "[]");
 
- ))}
+    const updated =
+      existing.filter(r => r.id !== id);
 
- </div>
+    localStorage.setItem(
+      CAM_STORAGE,
+      JSON.stringify(updated)
+    );
 
- )
+    setReports(updated);
+
+  };
+
+
+  return(
+
+  <div className="p-6 text-white min-h-screen bg-slate-950">
+
+  <h2 className="text-2xl font-bold mb-6">
+  Saved CAM Reports
+  </h2>
+
+
+  {reports.length===0 && (
+
+  <p className="text-gray-400">
+  No CAM reports saved yet
+  </p>
+
+  )}
+
+
+  <div className="space-y-4">
+
+  {reports.map((r)=>(
+
+  <div
+    key={r.id}
+    className="bg-slate-900 p-5 rounded-lg border border-slate-800"
+  >
+
+  <div className="flex justify-between items-center">
+
+  <div>
+
+  <h3 className="text-lg font-semibold">
+  {r.name}
+  </h3>
+
+  <p className="text-sm text-gray-400">
+  Saved on {r.date}
+  </p>
+
+  </div>
+
+
+  <div className="flex gap-3">
+
+  <button
+    onClick={()=>openReport(r)}
+    className="bg-emerald-600 px-4 py-2 rounded text-white"
+  >
+  Open
+  </button>
+
+  <button
+    onClick={()=>deleteReport(r.id)}
+    className="bg-red-500 px-4 py-2 rounded text-white"
+  >
+  Delete
+  </button>
+
+  </div>
+
+  </div>
+
+  </div>
+
+  ))}
+
+  </div>
+
+  </div>
+
+  )
 
 }
