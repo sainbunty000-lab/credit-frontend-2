@@ -1,257 +1,338 @@
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
-import { saveCurrentCase } from "../services/appStorage";
 import { useEffect, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 
-export default function FinalReport() {
+import {
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  ResponsiveContainer,
+  Legend
+} from "recharts";
 
-  const [report, setReport] = useState(null);
-  const [data, setData] = useState(null);
+const STORAGE_KEY = "credit_app_v1";
 
-  useEffect(() => {
+export default function FinalReport(){
 
-    const stored = JSON.parse(localStorage.getItem("credit_app_v1")) || {};
+  const [data,setData] = useState(null);
+  const [report,setReport] = useState(null);
+
+  useEffect(()=>{
+
+    const stored =
+      JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
 
     const wc = stored.workingCapital?.result || null;
     const agri = stored.agriculture?.result || null;
     const banking = stored.banking?.result || null;
 
-    const wcScore = wc?.wc_score ?? null;
-    const agriScore = agri?.agri_score ?? null;
+    const wcScore = wc?.liquidity_score ?? null;
+    const agriScore = agri?.risk_score ?? null;
     const bankingScore = banking?.risk_summary?.hygiene_score ?? null;
 
-    /* SCORE CALCULATION (DYNAMIC) */
+    /* SCORE ENGINE */
 
-    let finalScore = 0;
+    let score = 0;
     let weight = 0;
 
-    if (wcScore !== null) {
-      finalScore += wcScore * 0.4;
+    if(wcScore !== null){
+      score += wcScore * 0.4;
       weight += 0.4;
     }
 
-    if (agriScore !== null) {
-      finalScore += agriScore * 0.3;
+    if(agriScore !== null){
+      score += agriScore * 0.3;
       weight += 0.3;
     }
 
-    if (bankingScore !== null) {
-      finalScore += bankingScore * 0.3;
+    if(bankingScore !== null){
+      score += bankingScore * 0.3;
       weight += 0.3;
     }
 
-    if (weight > 0) finalScore = finalScore / weight;
+    if(weight>0) score = score / weight;
 
-    let decision = "DECLINED";
+    let decision="DECLINED";
 
-    if (finalScore >= 80) decision = "APPROVED";
-    else if (finalScore >= 65) decision = "CONDITIONAL APPROVAL";
+    if(score>=80) decision="APPROVED";
+    else if(score>=65) decision="CONDITIONAL APPROVAL";
 
-    /* LIMIT CALCULATION */
+    const recommendedLimit = Math.max(
+      wc?.drawing_power || 0,
+      agri?.eligible_loan_amount || 0
+    );
 
-    const wcLimit = wc?.drawing_power ?? 0;
-    const agriLimit = agri?.eligible_loan_amount ?? 0;
-
-    const recommendedLimit = Math.max(wcLimit, agriLimit);
-
-    const caseData = {
-      id: uuidv4(),
-      wcScore,
-      agriScore,
-      bankingScore,
-      finalScore,
+    setReport({
+      id:uuidv4(),
+      score,
       decision,
-      recommendedLimit,
-      createdAt: new Date().toISOString()
-    };
+      recommendedLimit
+    });
 
-    saveCurrentCase(caseData);
+    setData({wc,agri,banking});
 
-    setReport(caseData);
-    setData({ wc, agri, banking });
+  },[]);
 
-  }, []);
+  if(!report || !data) return null;
 
-  /* EXPORT PDF */
+  const COLORS = ["#10b981","#3b82f6"];
 
-  const exportPDF = async () => {
+  const exportPDF = async()=>{
 
-    const element = document.getElementById("cam-report");
+    const element =
+      document.getElementById("cam-report");
 
-    const canvas = await html2canvas(element, { scale: 2 });
+    const canvas =
+      await html2canvas(element,{scale:2});
 
-    const imgData = canvas.toDataURL("image/png");
+    const imgData =
+      canvas.toDataURL("image/png");
 
-    const pdf = new jsPDF("p", "mm", "a4");
+    const pdf =
+      new jsPDF("p","mm","a4");
 
-    const imgWidth = 210;
-    const pageHeight = 295;
-
+    const imgWidth=210;
     const imgHeight =
-      (canvas.height * imgWidth) / canvas.width;
+      (canvas.height*imgWidth)/canvas.width;
 
-    let heightLeft = imgHeight;
-    let position = 0;
-
-    pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-
-    heightLeft -= pageHeight;
-
-    while (heightLeft >= 0) {
-
-      position = heightLeft - imgHeight;
-
-      pdf.addPage();
-
-      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-
-      heightLeft -= pageHeight;
-
-    }
+    pdf.addImage(imgData,"PNG",0,0,imgWidth,imgHeight);
 
     pdf.save("CAM_Report.pdf");
 
   };
 
-  if (!report || !data) return null;
+  return(
 
-  return (
+  <div className="space-y-10">
 
-    <div className="space-y-8">
+  <div
+    id="cam-report"
+    className="bg-slate-900 p-8 rounded-xl border border-slate-800 space-y-10"
+  >
 
-      <div
-        id="cam-report"
-        className="bg-[#101c2e] p-10 rounded-xl border border-slate-800 space-y-8"
-      >
+  <h2 className="text-xl font-bold text-emerald-400">
+    Credit Assessment Memorandum
+  </h2>
 
-        {/* HEADER */}
+  {/* SCORE */}
 
-        <div className="border-b border-slate-700 pb-4">
+  <div className="bg-slate-800 p-6 rounded-lg">
 
-          <h2 className="text-2xl font-bold text-emerald-400">
-            Credit Assessment Memorandum
-          </h2>
+    <p className="text-slate-400 text-sm">
+      Final Credit Score
+    </p>
 
-          <p className="text-sm text-slate-400">
-            AI Powered Credit Intelligence Engine
-          </p>
+    <h2 className="text-3xl font-bold text-white">
+      {report.score.toFixed(1)}
+    </h2>
 
-        </div>
+    <Decision decision={report.decision}/>
 
-        {/* SCORE SUMMARY */}
+  </div>
 
-        <div className="grid grid-cols-3 gap-6">
 
-          {report.wcScore !== null &&
-            <ScoreCard title="Working Capital Score" value={report.wcScore} />
-          }
+  {/* WORKING CAPITAL */}
 
-          {report.agriScore !== null &&
-            <ScoreCard title="Agriculture Score" value={report.agriScore} />
-          }
+  {data.wc && (
 
-          {report.bankingScore !== null &&
-            <ScoreCard title="Banking Hygiene Score" value={report.bankingScore} />
-          }
+  <Section title="Working Capital Analysis">
 
-        </div>
+  <div className="grid grid-cols-3 gap-6">
 
-        {/* FINAL DECISION */}
+  <Metric
+    label="Current Ratio"
+    value={data.wc.current_ratio}
+  />
 
-        <div className="bg-slate-900 p-6 rounded-lg border border-slate-700">
+  <Metric
+    label="WC Turnover"
+    value={data.wc.wc_turnover}
+  />
 
-          <p className="text-slate-400 text-sm">
-            Final Risk Score
-          </p>
+  <Metric
+    label="Drawing Power"
+    value={`₹ ${data.wc.drawing_power?.toLocaleString()}`}
+  />
 
-          <h3 className="text-3xl font-bold text-white">
-            {report.finalScore.toFixed(1)}
-          </h3>
+  </div>
 
-          <div className="mt-4">
-            <DecisionBadge decision={report.decision} />
-          </div>
+  <ChartCard>
 
-        </div>
+  <ResponsiveContainer width="100%" height={280}>
 
-        {/* WORKING CAPITAL */}
+  <BarChart data={[
+    {name:"Assets",value:data.wc.current_assets||0},
+    {name:"Liabilities",value:data.wc.current_liabilities||0},
+    {name:"NWC",value:data.wc.nwc||0}
+  ]}>
 
-        {data.wc && (
+  <CartesianGrid strokeDasharray="3 3"/>
+  <XAxis dataKey="name"/>
+  <YAxis/>
+  <Tooltip/>
+  <Legend/>
 
-          <Section title="Working Capital Analysis">
+  <Bar dataKey="value" fill="#3b82f6"/>
 
-            <Metric label="Current Ratio" value={data.wc.current_ratio} />
-            <Metric label="WC Turnover" value={data.wc.wc_turnover} />
-            <Metric label="Drawing Power" value={`₹ ${data.wc.drawing_power?.toLocaleString()}`} />
+  </BarChart>
 
-          </Section>
+  </ResponsiveContainer>
 
-        )}
+  </ChartCard>
 
-        {/* AGRICULTURE */}
+  </Section>
 
-        {data.agri && (
+  )}
 
-          <Section title="Agriculture Analysis">
 
-            <Metric label="Disposable Income" value={`₹ ${data.agri.disposable_income?.toLocaleString()}`} />
-            <Metric label="FOIR %" value={`${data.agri.foir_percent}%`} />
-            <Metric label="Eligible Loan" value={`₹ ${data.agri.eligible_loan_amount?.toLocaleString()}`} />
+  {/* AGRICULTURE */}
 
-          </Section>
+  {data.agri && (
 
-        )}
+  <Section title="Agriculture Analysis">
 
-        {/* BANKING */}
+  <div className="grid grid-cols-3 gap-6">
 
-        {data.banking && (
+  <Metric
+    label="Disposable Income"
+    value={`₹ ${data.agri.disposable_income?.toLocaleString()}`}
+  />
 
-          <Section title="Banking Behaviour">
+  <Metric
+    label="FOIR %"
+    value={`${data.agri.foir_percent}%`}
+  />
 
-            <Metric
-              label="Total Credit"
-              value={`₹ ${data.banking.statement_summary?.total_credit?.toLocaleString()}`}
-            />
+  <Metric
+    label="Eligible Loan"
+    value={`₹ ${data.agri.eligible_loan_amount?.toLocaleString()}`}
+  />
 
-            <Metric
-              label="Total Debit"
-              value={`₹ ${data.banking.statement_summary?.total_debit?.toLocaleString()}`}
-            />
+  </div>
 
-            <Metric
-              label="Bounce Count"
-              value={data.banking.behavior_analysis?.bounce_count ?? 0}
-            />
+  <ChartCard>
 
-          </Section>
+  <ResponsiveContainer width="100%" height={280}>
 
-        )}
+  <PieChart>
 
-        {/* LIMIT */}
+  <Pie
+    data={[
+      {
+        name:"Documented",
+        value:data.agri.chart_data?.income_split?.documented||0
+      },
+      {
+        name:"Undocumented",
+        value:data.agri.chart_data?.income_split?.undocumented||0
+      }
+    ]}
+    dataKey="value"
+    outerRadius={110}
+  >
 
-        <div className="bg-slate-900 p-6 rounded-lg border border-slate-700">
+  {COLORS.map((c,i)=>(
+    <Cell key={i} fill={c}/>
+  ))}
 
-          <p className="text-slate-400 text-sm">
-            Recommended Credit Limit
-          </p>
+  </Pie>
 
-          <h3 className="text-3xl font-bold text-emerald-400">
-            ₹ {report.recommendedLimit.toLocaleString()}
-          </h3>
+  <Tooltip/>
 
-        </div>
+  </PieChart>
 
-      </div>
+  </ResponsiveContainer>
 
-      <button
-        onClick={exportPDF}
-        className="bg-emerald-500 px-6 py-3 rounded-md text-black font-semibold hover:bg-emerald-400"
-      >
-        Export CAM Report PDF
-      </button>
+  </ChartCard>
 
-    </div>
+  </Section>
+
+  )}
+
+
+  {/* BANKING */}
+
+  {data.banking && (
+
+  <Section title="Banking Behaviour">
+
+  <div className="grid grid-cols-3 gap-6">
+
+  <Metric
+    label="Total Credit"
+    value={`₹ ${data.banking.statement_summary?.total_credit?.toLocaleString()}`}
+  />
+
+  <Metric
+    label="Total Debit"
+    value={`₹ ${data.banking.statement_summary?.total_debit?.toLocaleString()}`}
+  />
+
+  <Metric
+    label="Bounce Count"
+    value={data.banking.behavior_analysis?.bounce_count||0}
+  />
+
+  </div>
+
+  <ChartCard>
+
+  <ResponsiveContainer width="100%" height={280}>
+
+  <BarChart
+    data={data.banking.chart_data?.monthly_trend||[]}
+  >
+
+  <CartesianGrid strokeDasharray="3 3"/>
+  <XAxis dataKey="month"/>
+  <YAxis/>
+  <Tooltip/>
+  <Legend/>
+
+  <Bar dataKey="credit" fill="#3b82f6"/>
+  <Bar dataKey="debit" fill="#ef4444"/>
+
+  </BarChart>
+
+  </ResponsiveContainer>
+
+  </ChartCard>
+
+  </Section>
+
+  )}
+
+  {/* LIMIT */}
+
+  <div className="bg-slate-800 p-6 rounded-lg">
+
+  <p className="text-slate-400 text-sm">
+  Recommended Credit Limit
+  </p>
+
+  <h2 className="text-3xl font-bold text-emerald-400">
+  ₹ {report.recommendedLimit.toLocaleString()}
+  </h2>
+
+  </div>
+
+  </div>
+
+  <button
+    onClick={exportPDF}
+    className="bg-emerald-500 px-6 py-3 rounded-md text-black font-semibold"
+  >
+    Export CAM Report PDF
+  </button>
+
+  </div>
 
   );
 
@@ -260,76 +341,67 @@ export default function FinalReport() {
 
 /* COMPONENTS */
 
-function ScoreCard({ title, value }) {
+function Metric({label,value}){
 
-  return (
+return(
 
-    <div className="bg-slate-900 p-4 rounded-lg border border-slate-700">
+<div className="bg-slate-800 p-4 rounded-lg">
 
-      <p className="text-xs text-slate-400">{title}</p>
+<p className="text-xs text-slate-400">
+{label}
+</p>
 
-      <h3 className="text-xl font-bold text-white mt-1">
-        {value}
-      </h3>
+<h3 className="text-lg font-bold text-white mt-1">
+{value}
+</h3>
 
-    </div>
+</div>
 
-  );
-
-}
-
-function Metric({ label, value }) {
-
-  return (
-
-    <div className="bg-slate-900 p-4 rounded-lg border border-slate-700">
-
-      <p className="text-xs text-slate-400">{label}</p>
-
-      <h3 className="text-lg font-bold text-white mt-1">
-        {value ?? "-"}
-      </h3>
-
-    </div>
-
-  );
+);
 
 }
 
-function Section({ title, children }) {
+function Decision({decision}){
 
-  return (
+let color="bg-red-500";
 
-    <div className="space-y-4">
+if(decision==="APPROVED") color="bg-emerald-500";
+if(decision==="CONDITIONAL APPROVAL") color="bg-yellow-500";
 
-      <h3 className="text-lg font-semibold text-emerald-400">
-        {title}
-      </h3>
-
-      <div className="grid grid-cols-3 gap-6">
-        {children}
-      </div>
-
-    </div>
-
-  );
+return(
+<span className={`${color} px-4 py-2 rounded-md text-black font-semibold mt-3 inline-block`}>
+{decision}
+</span>
+);
 
 }
 
-function DecisionBadge({ decision }) {
+function Section({title,children}){
 
-  let color = "bg-yellow-500";
+return(
 
-  if (decision === "APPROVED")
-    color = "bg-emerald-500";
+<div className="space-y-6">
 
-  if (decision === "DECLINED")
-    color = "bg-red-500";
+<h3 className="text-lg font-semibold text-emerald-400">
+{title}
+</h3>
 
-  return (
-    <span className={`${color} px-4 py-2 rounded-md text-black font-semibold`}>
-      {decision}
-    </span>
-  );
+{children}
+
+</div>
+
+);
+
+}
+
+function ChartCard({children}){
+
+return(
+
+<div className="bg-slate-800 p-6 rounded-lg border border-slate-700">
+{children}
+</div>
+
+);
 
 }
