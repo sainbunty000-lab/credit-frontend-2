@@ -1,302 +1,394 @@
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
-import { useEffect,useState } from "react";
+import { useEffect, useState } from "react";
+import {
+BarChart,
+Bar,
+XAxis,
+YAxis,
+Tooltip,
+ResponsiveContainer,
+CartesianGrid,
+PieChart,
+Pie,
+Cell
+} from "recharts";
 
-const STORAGE_KEY="credit_app_v1";
+import NavigationButtons from "../components/NavigationButtons";
+
+const STORAGE_KEY = "credit_app_v1";
 
 export default function FinalReport(){
 
-const [data,setData]=useState(null);
+const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
 
-useEffect(()=>{
+const wcData = stored?.workingCapital?.result || {};
+const agriData = stored?.agriculture?.result || {};
+const bankData = stored?.banking?.result || {};
 
-const stored=JSON.parse(localStorage.getItem(STORAGE_KEY))||{};
+const ratios = wcData?.ratios || {};
+const mpbf = wcData?.mpbf_analysis || {};
+const risk = wcData?.risk || {};
 
-setData({
-wc:stored.workingCapital?.result||null,
-agri:stored.agriculture?.result||null,
-banking:stored.banking?.result||null
-});
-
-},[]);
-
-if(!data) return null;
-
-const wc=data.wc;
-const agri=data.agri;
-const banking=data.banking;
+const formatINR = (val)=>
+new Intl.NumberFormat("en-IN",{
+style:"currency",
+currency:"INR",
+maximumFractionDigits:0
+}).format(Math.round(val || 0));
 
 
-/* CREDIT SCORE */
+/* =========================
+WORKING CAPITAL CHART DATA
+========================= */
 
-let score=0;
-let weight=0;
-
-if(wc?.risk?.risk_score){
-score+=wc.risk.risk_score*0.4;
-weight+=0.4;
+const wcChart = [
+{
+name:"NWC",
+value: ratios?.nwc || 0
+},
+{
+name:"MPBF",
+value: mpbf?.mpbf || 0
+},
+{
+name:"Limit",
+value: mpbf?.recommended_limit || 0
 }
+];
 
-if(agri?.risk_score){
-score+=agri.risk_score*0.3;
-weight+=0.3;
+
+/* =========================
+AGRI PIE CHART
+========================= */
+
+const agriPie = [
+{
+name:"Disposable Income",
+value: agriData?.disposable_income || 0
+},
+{
+name:"EMI Capacity",
+value: agriData?.eligible_loan || 0
 }
+];
 
-if(banking?.risk_summary?.hygiene_score){
-score+=banking.risk_summary.hygiene_score*0.3;
-weight+=0.3;
+
+/* =========================
+BANKING BAR CHART
+========================= */
+
+const bankChart = [
+{
+name:"Credit",
+value: bankData?.statement_summary?.total_credit || 0
+},
+{
+name:"Debit",
+value: bankData?.statement_summary?.total_debit || 0
 }
-
-if(weight>0) score=score/weight;
-
-let decision="DECLINED";
-
-if(score>=80) decision="APPROVED";
-else if(score>=65) decision="CONDITIONAL APPROVAL";
+];
 
 
-const recommendedLimit=Math.max(
+/* =========================
+FINAL CREDIT SCORE
+========================= */
 
-wc?.mpbf_analysis?.recommended_limit||0,
-agri?.eligible_loan_amount||0
+const score =
+(risk?.risk_score || 0) +
+(agriData?.foir_score || 0) +
+(bankData?.risk_summary?.hygiene_score || 0);
 
-);
+const finalScore = Math.min(100,Math.round(score/3));
 
-
-/* EXPORT PDF */
-
-const exportPDF=async()=>{
-
-const element=document.getElementById("cam-report");
-
-const canvas=await html2canvas(element,{scale:2});
-
-const imgData=canvas.toDataURL("image/png");
-
-const pdf=new jsPDF("p","mm","a4");
-
-const imgWidth=210;
-const pageHeight=295;
-
-const imgHeight=(canvas.height*imgWidth)/canvas.width;
-
-let heightLeft=imgHeight;
-let position=0;
-
-pdf.addImage(imgData,"PNG",0,position,imgWidth,imgHeight);
-
-heightLeft-=pageHeight;
-
-while(heightLeft>=0){
-
-position=heightLeft-imgHeight;
-
-pdf.addPage();
-
-pdf.addImage(imgData,"PNG",0,position,imgWidth,imgHeight);
-
-heightLeft-=pageHeight;
-
-}
-
-pdf.save("CAM_Report.pdf");
-
-};
+const decision = finalScore >= 70 ? "APPROVED" : "REVIEW";
 
 
 return(
 
-<div className="p-4 sm:p-6 space-y-10">
+<div className="min-h-screen bg-[#070b14] text-slate-200 p-4 sm:p-6 pt-20 pb-32">
 
-<div id="cam-report" className="bg-slate-900 p-6 rounded-xl space-y-10">
+<NavigationButtons prev="/agriculture" next="/" />
+
+<div className="max-w-7xl mx-auto space-y-10">
 
 
-{/* SECTION 1 */}
+{/* =====================================
+EXECUTIVE CREDIT SUMMARY
+===================================== */}
 
-<section>
+<div className="bg-[#0f172a] p-6 rounded-3xl border border-slate-800">
 
-<h2 className="text-xl font-bold text-emerald-400">
+<h2 className="text-xl font-bold text-emerald-400 mb-6">
 Executive Credit Summary
 </h2>
 
-<div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+<div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
 
-<Card title="Credit Score" value={score.toFixed(1)}/>
-<Card title="Decision" value={decision}/>
-<Card title="Recommended Limit" value={`₹ ${recommendedLimit.toLocaleString()}`}/>
-<Card title="Model" value="AI Underwriting"/>
+<Metric title="Credit Score" value={finalScore}/>
+
+<Metric title="Decision" value={decision}/>
+
+<Metric
+title="Recommended Limit"
+value={formatINR(mpbf?.recommended_limit)}
+/>
+
+<Metric title="Model" value="AI Underwriting"/>
 
 </div>
 
-</section>
+</div>
 
 
-{/* SECTION 2 */}
+{/* =====================================
+WORKING CAPITAL ASSESSMENT
+===================================== */}
 
-<section>
+<div className="bg-[#0f172a] p-6 rounded-3xl border border-slate-800">
 
-<h2 className="text-lg font-semibold text-emerald-400">
-Borrower Profile
-</h2>
-
-<p className="text-slate-300 text-sm mt-2">
-
-Applicant evaluated using automated credit underwriting engine
-combining financial statements, agricultural income and banking
-transaction behaviour.
-
-</p>
-
-</section>
-
-
-{/* SECTION 3 */}
-
-{wc && (
-
-<section>
-
-<h2 className="text-lg font-semibold text-emerald-400">
+<h2 className="text-lg font-semibold text-emerald-400 mb-4">
 Working Capital Assessment
 </h2>
 
-<div className="grid md:grid-cols-3 gap-4 mt-4">
+<div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
 
-<Card title="Current Ratio" value={wc?.ratios?.current_ratio}/>
-<Card title="WC Turnover" value={wc?.ratios?.wc_turnover}/>
-<Card title="Drawing Power" value={`₹ ${wc?.ratios?.drawing_power?.toLocaleString()}`}/>
+<Metric
+title="Current Ratio"
+value={(ratios?.current_ratio || 0).toFixed(2)}
+/>
+
+<Metric
+title="WC Turnover"
+value={(ratios?.wc_turnover || 0).toFixed(2)}
+/>
+
+<Metric
+title="Drawing Power"
+value={formatINR(ratios?.drawing_power)}
+/>
 
 </div>
 
-<div className="bg-slate-800 p-4 rounded-lg mt-6 text-sm text-slate-300">
+<ResponsiveContainer width="100%" height={280}>
 
-<b>Working Capital Model Logic</b>
+<BarChart data={wcChart}>
 
-<ul className="mt-2 space-y-1">
+<CartesianGrid strokeDasharray="3 3"/>
+
+<XAxis dataKey="name"/>
+
+<YAxis/>
+
+<Tooltip/>
+
+<Bar dataKey="value">
+
+<Cell fill="#3b82f6"/>
+<Cell fill="#10b981"/>
+<Cell fill="#f59e0b"/>
+
+</Bar>
+
+</BarChart>
+
+</ResponsiveContainer>
+
+</div>
+
+
+{/* =====================================
+WORKING CAPITAL LOGIC
+===================================== */}
+
+<div className="bg-[#0f172a] p-6 rounded-3xl border border-slate-800">
+
+<h3 className="text-white font-semibold mb-4">
+Working Capital Model Logic
+</h3>
+
+<ul className="text-sm text-slate-300 space-y-2">
 
 <li>NWC = Current Assets − Current Liabilities</li>
+
 <li>Current Ratio = Current Assets ÷ Current Liabilities</li>
+
 <li>Quick Ratio = (CA − Inventory) ÷ CL</li>
+
 <li>Operating Cycle = Inventory Days + Receivable Days</li>
+
 <li>Gap Days = Operating Cycle − Payable Days</li>
+
 <li>MPBF = Working Capital Gap − Margin (25%)</li>
+
 <li>Turnover Method = 20% of Annual Sales</li>
+
 <li>Drawing Power = 75% Debtors + 50% Stock</li>
 
 </ul>
 
 </div>
 
-</section>
 
-)}
+{/* =====================================
+AGRICULTURE INCOME
+===================================== */}
 
+<div className="bg-[#0f172a] p-6 rounded-3xl border border-slate-800">
 
-{/* SECTION 4 */}
-
-{agri && (
-
-<section>
-
-<h2 className="text-lg font-semibold text-emerald-400">
+<h2 className="text-lg font-semibold text-emerald-400 mb-6">
 Agriculture Income Assessment
 </h2>
 
-<div className="grid md:grid-cols-3 gap-4 mt-4">
+<div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
 
-<Card title="Disposable Income" value={`₹ ${agri?.disposable_income?.toLocaleString()}`}/>
-<Card title="FOIR %" value={`${agri?.foir_percent}%`}/>
-<Card title="Eligible Loan" value={`₹ ${agri?.eligible_loan_amount?.toLocaleString()}`}/>
+<Metric
+title="Disposable Income"
+value={formatINR(agriData?.disposable_income)}
+/>
+
+<Metric
+title="FOIR %"
+value={(agriData?.foir || 0).toFixed(2)}
+/>
+
+<Metric
+title="Eligible Loan"
+value={formatINR(agriData?.eligible_loan)}
+/>
 
 </div>
 
-</section>
+<ResponsiveContainer width="100%" height={260}>
 
-)}
+<PieChart>
+
+<Pie
+data={agriPie}
+dataKey="value"
+nameKey="name"
+outerRadius={90}
+label
+>
+
+<Cell fill="#10b981"/>
+<Cell fill="#3b82f6"/>
+
+</Pie>
+
+<Tooltip/>
+
+</PieChart>
+
+</ResponsiveContainer>
+
+</div>
 
 
-{/* SECTION 5 */}
+{/* =====================================
+BANKING BEHAVIOUR
+===================================== */}
 
-{banking && (
+<div className="bg-[#0f172a] p-6 rounded-3xl border border-slate-800">
 
-<section>
-
-<h2 className="text-lg font-semibold text-emerald-400">
+<h2 className="text-lg font-semibold text-emerald-400 mb-6">
 Banking Behaviour Analysis
 </h2>
 
-<div className="grid md:grid-cols-3 gap-4 mt-4">
+<div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
 
-<Card title="Total Credit" value={`₹ ${banking?.statement_summary?.total_credit?.toLocaleString()}`}/>
-<Card title="Total Debit" value={`₹ ${banking?.statement_summary?.total_debit?.toLocaleString()}`}/>
-<Card title="Bounce Count" value={banking?.behavior_analysis?.bounce_count}/>
+<Metric
+title="Total Credit"
+value={formatINR(bankData?.statement_summary?.total_credit)}
+/>
+
+<Metric
+title="Total Debit"
+value={formatINR(bankData?.statement_summary?.total_debit)}
+/>
+
+<Metric
+title="Bounce Count"
+value={bankData?.behavior_analysis?.bounce_count || 0}
+/>
 
 </div>
 
-</section>
+<ResponsiveContainer width="100%" height={260}>
 
-)}
+<BarChart data={bankChart}>
+
+<CartesianGrid strokeDasharray="3 3"/>
+
+<XAxis dataKey="name"/>
+
+<YAxis/>
+
+<Tooltip/>
+
+<Bar dataKey="value">
+
+<Cell fill="#22c55e"/>
+<Cell fill="#ef4444"/>
+
+</Bar>
+
+</BarChart>
+
+</ResponsiveContainer>
+
+</div>
 
 
-{/* SECTION 6 */}
+{/* =====================================
+RISK ASSESSMENT
+===================================== */}
 
-<section>
+<div className="bg-[#0f172a] p-6 rounded-3xl border border-slate-800">
 
-<h2 className="text-lg font-semibold text-emerald-400">
+<h2 className="text-lg font-semibold text-emerald-400 mb-4">
 Risk Assessment
 </h2>
 
-<p className="text-slate-300 text-sm mt-2">
+<p className="text-slate-300 text-sm">
 
 Credit score derived from integrated financial model combining
-working capital ratios, agricultural income stability and banking
+working capital ratios, agriculture income stability and banking
 transaction hygiene.
 
 </p>
 
-</section>
+<div className="mt-4">
+
+<Metric
+title="Risk Grade"
+value={risk?.risk_grade || "NA"}
+/>
+
+</div>
+
+</div>
 
 
-{/* SECTION 7 */}
+{/* =====================================
+FINAL CREDIT RECOMMENDATION
+===================================== */}
 
-<section>
+<div className="bg-[#0f172a] p-6 rounded-3xl border border-slate-800">
 
-<h2 className="text-lg font-semibold text-emerald-400">
+<h2 className="text-lg font-semibold text-emerald-400 mb-4">
 Final Credit Recommendation
 </h2>
 
-<div className="bg-slate-800 p-6 rounded-lg mt-4">
+<h3 className="text-3xl font-bold text-emerald-400">
+{formatINR(mpbf?.recommended_limit)}
+</h3>
 
-<p className="text-slate-400 text-sm">
-Recommended Credit Limit
-</p>
-
-<h2 className="text-3xl font-bold text-emerald-400">
-₹ {recommendedLimit.toLocaleString()}
-</h2>
-
-<p className="text-sm text-slate-300 mt-2">
-
-Decision: <b>{decision}</b>
-
+<p className="text-sm text-slate-400 mt-2">
+Decision: {decision}
 </p>
 
 </div>
 
-</section>
-
-
 </div>
-
-
-<button
-onClick={exportPDF}
-className="bg-emerald-500 px-6 py-3 rounded-md text-black font-semibold"
->
-
-Export CAM Report PDF
-
-</button>
 
 </div>
 
@@ -305,17 +397,21 @@ Export CAM Report PDF
 }
 
 
-function Card({title,value}){
+/* =========================
+METRIC CARD
+========================= */
+
+function Metric({title,value}){
 
 return(
 
-<div className="bg-slate-800 p-4 rounded-lg">
+<div className="bg-[#020617] p-4 rounded-xl border border-slate-800">
 
-<p className="text-xs text-slate-400">
+<p className="text-slate-400 text-sm">
 {title}
 </p>
 
-<h3 className="text-lg font-bold text-white mt-1">
+<h3 className="text-lg font-bold text-white mt-2">
 {value}
 </h3>
 
