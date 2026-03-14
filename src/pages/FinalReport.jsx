@@ -13,8 +13,7 @@ Cell
 } from "recharts";
 
 import NavigationButtons from "../components/NavigationButtons";
-
-const STORAGE_KEY = "credit_app_v1";
+import { STORAGE_KEY } from "../config/constants";
 
 export default function FinalReport(){
 

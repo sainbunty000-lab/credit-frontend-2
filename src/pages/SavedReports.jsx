@@ -1,9 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import NavigationButtons from "../components/NavigationButtons";
-
-const CAM_STORAGE = "cam_reports";
-const STORAGE_KEY = "credit_app_v1";
+import { STORAGE_KEY, CAM_STORAGE } from "../config/constants";
 
 export default function SavedReports(){
 

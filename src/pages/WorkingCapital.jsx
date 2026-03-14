@@ -12,7 +12,8 @@ ResponsiveContainer,
 Cell
 } from "recharts";
 
-const API="https://credit-backend-production-d988.up.railway.app";
+import { wcUploadDual } from "../services/api";
+import { handleApiError } from "../utils/errorHandler";
 
 export default function WorkingCapital(){
 
@@ -45,12 +46,7 @@ const fd=new FormData();
 fd.append("balance_sheet",balanceSheet);
 fd.append("profit_loss",profitLoss);
 
-const res=await fetch(`${API}/wc/upload-dual`,{
-method:"POST",
-body:fd
-});
-
-const data=await res.json();
+const data=await wcUploadDual(fd);
 
 if(data.success){
 setResult(data);
@@ -60,8 +56,7 @@ alert("Extraction failed");
 
 }catch(err){
 
-console.error(err);
-alert("Server error");
+alert(handleApiError(err,"Server error. Please try again."));
 
 }finally{
 
