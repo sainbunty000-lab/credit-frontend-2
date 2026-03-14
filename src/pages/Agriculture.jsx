@@ -23,8 +23,8 @@ import {
 } from "recharts";
 
 import { agriCalculate } from "../services/api";
-
-const STORAGE_KEY = "credit_app_v1";
+import { STORAGE_KEY } from "../config/constants";
+import { handleApiError } from "../utils/errorHandler";
 
 const COLORS = ["#10b981","#3b82f6"];
 
@@ -144,8 +144,7 @@ setResult(data);
 
 }catch(err){
 
-console.error(err);
-setError("Unable to calculate agriculture eligibility.");
+setError(handleApiError(err,"Unable to calculate agriculture eligibility."));
 
 }finally{
 

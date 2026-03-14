@@ -1,55 +1,100 @@
-const API = "https://credit-backend-production-d988.up.railway.app";
+import { API_BASE_URL } from "../config/constants";
+import { logError } from "../utils/errorHandler";
+
+const checkResponse = async (res) => {
+  if (!res.ok) {
+    throw new Error(`Server error: ${res.status} ${res.statusText}`);
+  }
+  return res.json();
+};
+
 
 /* AGRICULTURE */
 
-export const agriCalculate = async (data)=>{
+export const agriCalculate = async (data) => {
 
-const res = await fetch(`${API}/agriculture/calculate`,{
-method:"POST",
-headers:{ "Content-Type":"application/json" },
-body:JSON.stringify(data)
-});
+  try {
 
-return res.json();
+    const res = await fetch(`${API_BASE_URL}/agriculture/calculate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+
+    return checkResponse(res);
+
+  } catch (err) {
+
+    logError(err, "agriCalculate");
+    throw err;
+
+  }
 
 };
 
 
 /* BANKING */
 
-export const bankingAnalyze = async (formData)=>{
+export const bankingAnalyze = async (formData) => {
 
-const res = await fetch(`${API}/banking/full-analysis`,{
-method:"POST",
-body:formData
-});
+  try {
 
-return res.json();
+    const res = await fetch(`${API_BASE_URL}/banking/full-analysis`, {
+      method: "POST",
+      body: formData,
+    });
+
+    return checkResponse(res);
+
+  } catch (err) {
+
+    logError(err, "bankingAnalyze");
+    throw err;
+
+  }
 
 };
 
 
 /* WORKING CAPITAL */
 
-export const wcUploadDual = async (formData)=>{
+export const wcUploadDual = async (formData) => {
 
-const res = await fetch(`${API}/wc/upload-dual`,{
-method:"POST",
-body:formData
-});
+  try {
 
-return res.json();
+    const res = await fetch(`${API_BASE_URL}/wc/upload-dual`, {
+      method: "POST",
+      body: formData,
+    });
+
+    return checkResponse(res);
+
+  } catch (err) {
+
+    logError(err, "wcUploadDual");
+    throw err;
+
+  }
 
 };
 
-export const wcManualCalc = async (data)=>{
+export const wcManualCalc = async (data) => {
 
-const res = await fetch(`${API}/wc/manual-calc`,{
-method:"POST",
-headers:{ "Content-Type":"application/json" },
-body:JSON.stringify(data)
-});
+  try {
 
-return res.json();
+    const res = await fetch(`${API_BASE_URL}/wc/manual-calc`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+
+    return checkResponse(res);
+
+  } catch (err) {
+
+    logError(err, "wcManualCalc");
+    throw err;
+
+  }
 
 };

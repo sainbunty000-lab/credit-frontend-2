@@ -6,6 +6,8 @@ import ExportCAM from "../components/ExportCAM";
 import { Upload, BarChart3, ShieldCheck } from "lucide-react";
 
 import { bankingAnalyze } from "../services/api";
+import { STORAGE_KEY } from "../config/constants";
+import { handleApiError } from "../utils/errorHandler";
 
 import {
 BarChart,
@@ -20,8 +22,6 @@ PieChart,
 Pie,
 Cell
 } from "recharts";
-
-const STORAGE_KEY = "credit_app_v1";
 
 export default function Banking(){
 
@@ -102,8 +102,7 @@ setResult(data.analysis || data || null);
 
 }catch(err){
 
-console.error(err);
-alert("Bank analysis failed");
+alert(handleApiError(err,"Bank analysis failed. Please try again."));
 
 }finally{
 
