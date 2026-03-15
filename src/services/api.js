@@ -78,6 +78,28 @@ export const wcUploadDual = async (formData) => {
 
 };
 
+/* STATEMENT ANALYSIS */
+
+export const analyzeStatement = async (formData) => {
+
+  try {
+
+    const res = await fetch(`${API_BASE_URL}/analyze`, {
+      method: "POST",
+      body: formData,
+    });
+
+    return checkResponse(res);
+
+  } catch (err) {
+
+    logError(err, "analyzeStatement");
+    throw err;
+
+  }
+
+};
+
 export const wcManualCalc = async (data) => {
 
   try {
