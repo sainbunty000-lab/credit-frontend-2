@@ -11,7 +11,7 @@ import { motion } from "framer-motion";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
-const API = "https://your-backend.onrender.com";
+const API = "https://credit-backend-production-d988.up.railway.app";
 
 export default function App() {
   const reportRef = useRef();
